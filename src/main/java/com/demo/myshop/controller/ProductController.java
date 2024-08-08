@@ -7,11 +7,14 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
+
+import java.util.List;
+import java.util.Optional;
 
 @Controller
 @RequiredArgsConstructor
-//@RequestMapping("/api/products")
 public class ProductController {
 
     private final ProductService productService;
@@ -41,4 +44,17 @@ public class ProductController {
         model.addAttribute("products", productService.getAvailableProducts());
         return "list";
     }
+    // 상품 상세 조회
+    @GetMapping("/product/{id}")
+    public String productDetail(@PathVariable("id") Long id, Model model) {
+        Optional<Product> result = productService.findItemById(id);
+        if (result.isPresent()) {
+            Product product = result.get();
+            model.addAttribute("product", product);
+            return "detail";
+        }else {
+            return "redirect:/";
+        }
+    }
+
 }
