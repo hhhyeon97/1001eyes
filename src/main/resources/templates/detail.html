@@ -3,18 +3,21 @@
 <head>
     <meta charset="UTF-8">
     <title>상품 상세</title>
+    <link th:href="@{main.css}" rel="stylesheet" />
     <style>
         .container {
             padding: 20px;
             max-width: 800px;
             margin: 0 auto;
+            display: flex;
         }
         .product-image {
-            width: 100%;
-            height: auto;
+            width: 300px;
+            height: 300px;
         }
         .product-details {
             margin-top: 20px;
+            margin-left: 50px;
         }
         .product-title {
             font-size: 2em;
@@ -27,22 +30,11 @@
         .product-description {
             margin-top: 10px;
         }
-        .back-button {
-            margin-top: 20px;
-            display: inline-block;
-            padding: 10px 20px;
-            background-color: #007bff;
-            color: white;
-            text-decoration: none;
-            border-radius: 4px;
-        }
-        .back-button:hover {
-            background-color: #0056b3;
-        }
     </style>
 </head>
 <body>
 <div th:replace="~{navbar.html::navbar}"></div>
+<h1>상품 디테일</h1>
 <div class="container">
     <img class="product-image" th:src="@{${product.imageUrl}}" alt="Product Image"/>
     <div class="product-details">

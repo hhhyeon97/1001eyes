@@ -3,6 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <title>상품 리스트</title>
+    <link th:href="@{main.css}" rel="stylesheet" />
     <style>
         .container {
             display: flex;
@@ -61,7 +62,6 @@
         <div class="card-content">
             <h2 class="card-title" th:text="${product.title}"></h2>
             <p class="card-price" th:text="'$' + ${product.price}"></p>
-            <a class="card-button" th:href="@{/product/{id}(id=${product.id})}">View Details</a>
         </div>
     </div>
 </div>
