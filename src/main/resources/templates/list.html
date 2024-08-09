@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <title>상품 리스트</title>
-    <link th:href="@{main.css}" rel="stylesheet" />
+    <link th:href="@{/css/main.css}" rel="stylesheet" />
     <style>
         .container {
             display: flex;
@@ -56,7 +56,7 @@
 <h1>상품 리스트</h1>
 <div class="container">
     <div class="card" th:each="product : ${products}">
-        <a th:href="@{/product/{id}(id=${product.id})}">
+        <a th:href="@{/api/product/{id}(id=${product.id})}">
             <img th:src="@{${product.imageUrl}}" alt="Product Image"/>
         </a>
         <div class="card-content">

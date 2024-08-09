@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport"
+          content="width=device-width, user-scalable=no, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <meta charset="UTF-8">
+    <title>로그인 페이지</title>
+    <link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+<div th:replace="~{ navbar.html::navbar }"></div>
+<div id="login-form">
+    <h1>로그인</h1>
+    <button id="login-id-btn" onclick="location.href='/api/user/register-form'">
+        회원 가입하기
+    </button>
+    <form action="/api/user/login" method="post">
+        아이디
+        <input type="text" name="username">
+        비밀번호
+        <input type="password" name="password">
+        <button type="submit">로그인</button>
+    </form>
+    <div id="login-failed" style="display: none" class="alert alert-danger" role="alert">로그인에 실패하였습니다.</div>
+</div>
+</body>
+<script>
+    const href = location.href;
+    const queryString = href.substring(href.indexOf("?")+1)
+    if (queryString === 'error') {
+        const errorDiv = document.getElementById('login-failed');
+        errorDiv.style.display = 'block';
+    }
+</script>
+</html>

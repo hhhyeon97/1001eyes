@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport"
+          content="width=device-width, user-scalable=no, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <meta charset="UTF-8">
+    <title>회원가입 페이지</title>
+    <script>
+        function onclickAdmin() {
+            // Get the checkbox
+            var checkBox = document.getElementById("admin-check");
+            // Get the output text
+            var box = document.getElementById("admin-token");
+
+            // If the checkbox is checked, display the output text
+            if (checkBox.checked == true){
+                box.style.display = "block";
+            } else {
+                box.style.display = "none";
+            }
+        }
+    </script>
+</head>
+<body>
+    <h1>회원가입</h1>
+    <form action="/api/user/register" method="post">
+        아이디
+        <input type="text" name="username" placeholder="Username">
+        패스워드
+        <input type="password" name="password">
+        이메일
+        <input type="text" name="email" placeholder="E-mail">
+        전화번호
+        <input type="tel" name="phone" placeholder="Phone Number">
+        <div>
+            <input id="admin-check" type="checkbox" name="admin" onclick="onclickAdmin()" style="margin-top: 40px;">관리자
+            <input id="admin-token" type="password" name="adminToken" placeholder="관리자 암호" style="display:none">
+        </div>
+        <button type="submit">회원 가입</button>
+    </form>
+</body>
+</html>

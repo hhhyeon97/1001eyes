@@ -9,23 +9,25 @@ import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestMapping;
 
 import java.util.List;
 import java.util.Optional;
 
 @Controller
 @RequiredArgsConstructor
+@RequestMapping("/api/product")
 public class ProductController {
 
     private final ProductService productService;
 
     // 상품 등록 폼
-    @GetMapping("/add")
+    @GetMapping("/add-form")
     public String productForm() {
         return "create";
     }
     // 상품 등록
-    @PostMapping("/post")
+    @PostMapping("/add")
     public String addProduct(String title, String description, String category, Integer stock, String imageUrl, Integer price) {
         Product product = new Product();
         product.setTitle(title);
@@ -45,7 +47,7 @@ public class ProductController {
         return "list";
     }
     // 상품 상세 조회
-    @GetMapping("/product/{id}")
+    @GetMapping("/{id}")
     public String productDetail(@PathVariable("id") Long id, Model model) {
         Optional<Product> result = productService.findItemById(id);
         if (result.isPresent()) {

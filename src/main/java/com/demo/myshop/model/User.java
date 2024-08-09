@@ -2,44 +2,57 @@ package com.demo.myshop.model;
 
 import jakarta.persistence.*;
 import lombok.Getter;
+import lombok.NoArgsConstructor;
 import lombok.Setter;
+import org.hibernate.annotations.CreationTimestamp;
+import org.hibernate.annotations.UpdateTimestamp;
 import org.springframework.data.annotation.CreatedDate;
 import org.springframework.data.annotation.LastModifiedDate;
 
 import java.time.LocalDateTime;
+import java.util.Date;
 
 @Entity
 @Getter
 @Setter
+@NoArgsConstructor
+@Table(name = "users")
 public class User {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
+    @Column(nullable = false, unique = true)
     private String username;
 
-    @Column(unique = true)
+    @Column(nullable = false, unique = true)
     private String email;
 
+    @Column(nullable = false)
     private String password;
 
     private String phone;
 
     private boolean withdraw;
 
-    private String role;
+    // @Enumerated -> 데이터 enum 타입을 db 컬럼에 저장할 때 사용하는 어노테이션
+    // EnumType.STRING 옵션 -> enum의 이름 그대로를 db에 저장하겠다는 의미
+    @Column(nullable = false)
+    @Enumerated(value = EnumType.STRING)
+    private UserRoleEnum role;
 
-    @CreatedDate
+    @CreationTimestamp
     private LocalDateTime created_at;
 
-    @LastModifiedDate
+    @UpdateTimestamp
     private LocalDateTime updated_at;
 
-    // 이메일 인증 관련 필드 추가
-    private String authNum; // 인증번호
-    private LocalDateTime authNumCreatedAt; // 인증번호 생성 시간
-    private LocalDateTime authNumExpiresAt; // 인증번호 만료 시간
-    private boolean isEmailVerified; // 이메일 인증 여부
-
+    public User(String username, String password, String email, String phone, UserRoleEnum role) {
+        this.username = username;
+        this.password = password;
+        this.email = email;
+        this.phone = phone;
+        this.role = role;
+    }
 }
