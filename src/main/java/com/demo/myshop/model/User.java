@@ -11,6 +11,7 @@ import org.springframework.data.annotation.LastModifiedDate;
 
 import java.time.LocalDateTime;
 import java.util.Date;
+import java.util.List;
 
 @Entity
 @Getter
@@ -34,10 +35,12 @@ public class User {
 
     private String phone;
 
+    @OneToMany(mappedBy = "user")
+    private List<Address> addresses;  // 하나의 사용자는 여러 주소를 가질 수 있음 !
+
+
     private boolean withdraw;
 
-    // @Enumerated -> 데이터 enum 타입을 db 컬럼에 저장할 때 사용하는 어노테이션
-    // EnumType.STRING 옵션 -> enum의 이름 그대로를 db에 저장하겠다는 의미
     @Column(nullable = false)
     @Enumerated(value = EnumType.STRING)
     private UserRoleEnum role;
