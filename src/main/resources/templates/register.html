@@ -7,6 +7,7 @@
     <meta http-equiv="X-UA-Compatible" content="ie=edge">
     <meta charset="UTF-8">
     <title>회원가입 페이지</title>
+    <link th:href="@{/css/main.css}" rel="stylesheet" />
     <script>
         function onclickAdmin() {
             // Get the checkbox
@@ -24,6 +25,7 @@
     </script>
 </head>
 <body>
+<div th:replace="~{ navbar.html::navbar }"></div>
     <h1>회원가입</h1>
     <form action="/api/user/register" method="post">
         아이디

@@ -4,12 +4,14 @@ package com.demo.myshop.model;
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.Setter;
+import org.hibernate.annotations.CreationTimestamp;
 
-import java.util.Date;
+import java.time.LocalDateTime;
 
 @Entity
 @Getter
 @Setter
+@Table(name = "products")
 public class Product {
 
     @Id
@@ -22,27 +24,16 @@ public class Product {
     @Lob
     private String description;
 
-    private int price;
+    private Integer price;
 
     private String imageUrl;
 
-    private int stock;
+    private Integer stock;
 
     @Column(length = 30)
     private String category;
 
-    @Column(nullable = false)
-    private boolean isDeleted = false;
-
-    @Column(nullable = false, updatable = false)
-    @Temporal(TemporalType.TIMESTAMP)
-    private Date createdDate;
-
-    @PrePersist
-    protected void onCreate() {
-        if (createdDate == null) {
-            createdDate = new Date();
-        }
-    }
+    @CreationTimestamp
+    private LocalDateTime created_at;
 
 }

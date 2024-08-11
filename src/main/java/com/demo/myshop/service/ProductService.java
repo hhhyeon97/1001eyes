@@ -2,7 +2,6 @@ package com.demo.myshop.service;
 
 import com.demo.myshop.model.Product;
 import com.demo.myshop.repository.ProductRepository;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -11,8 +10,11 @@ import java.util.Optional;
 @Service
 public class ProductService {
 
-    @Autowired
-    private ProductRepository productRepository;
+    private final ProductRepository productRepository;
+
+    public ProductService(ProductRepository productRepository) {
+        this.productRepository = productRepository;
+    }
 
     // 상품 등록
     public void saveProduct(Product product) {
@@ -20,8 +22,8 @@ public class ProductService {
     }
 
     // 상품 리스트 조회
-    public List<Product> getAvailableProducts() {
-        return productRepository.findByIsDeletedFalse();
+    public List<Product> getAllProducts() {
+        return productRepository.findAll();
     }
 
     // 상품 상세

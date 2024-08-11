@@ -6,11 +6,8 @@ import lombok.NoArgsConstructor;
 import lombok.Setter;
 import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
-import org.springframework.data.annotation.CreatedDate;
-import org.springframework.data.annotation.LastModifiedDate;
 
 import java.time.LocalDateTime;
-import java.util.Date;
 import java.util.List;
 
 @Entity
@@ -36,8 +33,7 @@ public class User {
     private String phone;
 
     @OneToMany(mappedBy = "user")
-    private List<Address> addresses;  // 하나의 사용자는 여러 주소를 가질 수 있음 !
-
+    private List<Address> addresses;  // 하나의 사용자는 여러 주소를 가질 수 있음
 
     private boolean withdraw;
 

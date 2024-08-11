@@ -8,13 +8,13 @@
 <body>
 <div th:replace="~{ navbar.html::navbar }"></div>
 <h1>상품 등록</h1>
-<form id="itemForm" action="/post" method="POST">
+<form id="itemForm" action="/api/product/add" method="POST">
     <input name="title" placeholder="상품명" required>
-    <input type="number" name="price" placeholder="가격" min="100" required>
+    <input name="price" placeholder="가격" required>
     <input name="description" placeholder="설명" required>
     <input name="stock" placeholder="재고" required>
     <input name="category" placeholder="카테고리" required>
-    <input name="imageUrl" placeholder="이미지경로" required>
+    <input name="imageUrl" placeholder="이미지url" required>
     <button type="submit">등록</button>
 </form>
 </body>

@@ -1,11 +1,6 @@
 package com.demo.myshop.model;
 
-import jakarta.persistence.Entity;
-import jakarta.persistence.GeneratedValue;
-import jakarta.persistence.GenerationType;
-import jakarta.persistence.Id;
-import jakarta.persistence.ManyToOne;
-import jakarta.persistence.Table;
+import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.Setter;
 
@@ -20,16 +15,17 @@ public class Address {
     private Long id;
 
     private String address; // 기본 주소
-    private String address_detail; // 상세 주소
+    private String addressDetail; // 상세 주소
     private String zipcode; // 우편 번호
 
     private String name; // 받는 분 이름
-    private String default_address; // 기본 배송지
+    private boolean isDefault; // 기본 배송지 체크
 
-    private String phone_number; // 전화번호
+    private String phoneNumber; // 전화번호
     private String message; // 배송 메세지
 
     @ManyToOne
-    private User user_id;
+    @JoinColumn(name = "user_id") // 외래 키 열 이름 명시
+    private User user;
 
 }

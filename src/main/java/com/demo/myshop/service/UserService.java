@@ -28,7 +28,7 @@ public class UserService {
     // ADMIN_TOKEN
     private final String ADMIN_TOKEN = "AAABnvxRVklrnYxKZ0aHgTBcXukeZygoC";
 
-    public void join(RegisterRequestDto requestDto) {
+    public void join(RegisterRequestDto requestDto) {  // TODO : 주소 부분 추가
         String username = requestDto.getUsername();
         String password = passwordEncoder.encode(requestDto.getPassword());
 
