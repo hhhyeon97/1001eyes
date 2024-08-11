@@ -25,10 +25,7 @@ public class ProductController {
 
     // 상품 등록 폼
     @GetMapping("/add-form")
-    public String productForm(@AuthenticationPrincipal UserDetailsImpl userDetails) {
-        User user = userDetails.getUser();
-        System.out.println("user.getUsername() = " + user.getUsername());
-        System.out.println("user.getEmail() = " + user.getEmail());
+    public String productForm() {
         return "create";
     }
     // 상품 등록

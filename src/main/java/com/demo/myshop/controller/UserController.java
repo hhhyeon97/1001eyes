@@ -40,14 +40,4 @@ public class UserController {
         return "login";
     }
 
-    // 로그인
-    @PostMapping("/login")
-    public String login(LoginRequestDto requestDto, HttpServletResponse res){
-        try {
-            userService.login(requestDto, res);
-        } catch (Exception e) {
-            return "redirect:/api/user/login-form?error";
-        }
-        return "redirect:/";
-    }
 }

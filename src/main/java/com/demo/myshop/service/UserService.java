@@ -6,7 +6,7 @@ import com.demo.myshop.dto.RegisterRequestDto;
 import com.demo.myshop.model.User;
 import com.demo.myshop.model.UserRoleEnum;
 import com.demo.myshop.repository.UserRepository;
-import com.demo.myshop.util.JwtUtil;
+import com.demo.myshop.jwt.JwtUtil;
 import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -61,23 +61,4 @@ public class UserService {
         userRepository.save(user);
     }
 
-    public void login(LoginRequestDto requestDto, HttpServletResponse res) {
-        String username = requestDto.getUsername();
-        String password = requestDto.getPassword();
-
-        // 사용자 확인 -> 없으면 에러 처리
-        User user = userRepository.findByUsername(username).orElseThrow(
-                () -> new IllegalArgumentException("등록된 사용자가 없습니다.")
-        );
-
-        // 비밀번호 확인
-        if (!passwordEncoder.matches(password, user.getPassword())) {
-            throw  new IllegalArgumentException("비밀번호가 일치하지 않습니다.");
-        }
-
-        // JWT 생성 및 쿠키에 저장 후 Response 객체에 추가
-        String token = jwtUtil.createToken(user.getUsername(), user.getRole());
-        jwtUtil.addJwtToCookie(token, res);
-
-    }
 }
