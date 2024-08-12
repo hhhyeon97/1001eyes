@@ -52,12 +52,14 @@ public class JwtAuthenticationFilter extends UsernamePasswordAuthenticationFilte
         String username = ((UserDetailsImpl) authResult.getPrincipal()).getUsername();
         UserRoleEnum role = ((UserDetailsImpl) authResult.getPrincipal()).getUser().getRole();
 
+        // 기존 jwt 토큰 저장
         String token = jwtUtilWithRedis.createToken(username, role);
-
-        // Redis에 토큰 저장
-        jwtUtilWithRedis.saveTokenInRedis(token, 15 * 60); // 15분 설정 (초 단위)
-
         jwtUtilWithRedis.addJwtToCookie(token, response);
+
+        // 업데이트 코드 : Redis에 토큰 저장 -> 뭔가 꼬임 일단 주석
+//        String token = jwtUtilWithRedis.createToken(username, role);
+//        jwtUtilWithRedis.saveTokenInRedis(token, 15 * 60); // 15분 설정 (초 단위)
+//        jwtUtilWithRedis.addJwtToCookie(token, response);
     }
 
     @Override

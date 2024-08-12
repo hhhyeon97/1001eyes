@@ -15,6 +15,13 @@
     <button id="login-id-btn" onclick="location.href='/api/user/register-form'">
         회원 가입하기
     </button>
+
+    <!-- 로그인 실패 메시지 -->
+    <div id="login-failed" style="display: none" class="alert alert-danger" role="alert">로그인에 실패하였습니다.</div>
+
+    <!-- 토큰 만료 메시지 -->
+    <div id="token-expired" style="display: none" class="alert alert-warning" role="alert">토큰이 만료되었습니다. 다시 로그인해주세요.</div>
+
     <form id="loginForm">
         아이디
         <input type="text" name="username" required>
@@ -22,9 +29,21 @@
         <input type="password" name="password" required>
         <button type="submit">로그인</button>
     </form>
-    <div id="login-failed" style="display: none" class="alert alert-danger" role="alert">로그인에 실패하였습니다.</div>
 </div>
+
 <script>
+    document.addEventListener('DOMContentLoaded', () => {
+        // URL 파라미터로부터 error 메시지 확인
+        const urlParams = new URLSearchParams(window.location.search);
+        const error = urlParams.get('error');
+
+        // 토큰 만료 시 메시지 표시
+        if (error === 'tokenExpired') {
+            const tokenExpiredDiv = document.getElementById('token-expired');
+            tokenExpiredDiv.style.display = 'block';
+        }
+    });
+
     document.getElementById('loginForm').addEventListener('submit', async function(event) {
         event.preventDefault(); // 기본 폼 제출을 방지
 

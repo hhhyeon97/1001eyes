@@ -87,13 +87,32 @@ public class JwtUtilWithRedis {
         }
     }
 
-    // JWT 토큰 substring
-    public String substringToken(String tokenValue) {
+
+    public String substringToken(String tokenValue, HttpServletRequest request, HttpServletResponse response) {
         if (StringUtils.hasText(tokenValue) && tokenValue.startsWith(BEARER_PREFIX)) {
             return tokenValue.substring(7);
         }
         logger.error("Not Found Token");
-        throw new NullPointerException("Not Found Token");
+
+        // 쿠키에서 토큰 삭제
+        deleteTokenFromCookie(request, response);
+        return null;
+    }
+
+    public void deleteTokenFromCookie(HttpServletRequest request, HttpServletResponse response) {
+        Cookie[] cookies = request.getCookies();
+        if (cookies != null) {
+            for (Cookie cookie : cookies) {
+                if (cookie.getName().equals(AUTHORIZATION_HEADER)) {
+                    Cookie cookieToDelete = new Cookie(AUTHORIZATION_HEADER, null);
+                    cookieToDelete.setPath("/"); // 모든 경로에서 쿠키를 제거하기 위해
+                    cookieToDelete.setMaxAge(0); // 쿠키 만료 설정
+                    response.addCookie(cookieToDelete);
+                    logger.info("Removed invalid token from cookie.");
+                    break;
+                }
+            }
+        }
     }
 
     // 토큰 검증

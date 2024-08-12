@@ -9,6 +9,7 @@ import org.springframework.security.core.Authentication;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+
 import java.io.IOException;
 
 public class CustomLogoutSuccessHandler implements LogoutSuccessHandler {
@@ -25,8 +26,13 @@ public class CustomLogoutSuccessHandler implements LogoutSuccessHandler {
             throws IOException, ServletException {
         String token = jwtUtilWithRedis.getTokenFromRequest(request);
         if (token != null) {
-            token = jwtUtilWithRedis.substringToken(token);
-            jwtUtilWithRedis.removeTokenFromRedis(token);
+            try {
+                // substringToken 호출
+                token = jwtUtilWithRedis.substringToken(token, request, response);
+                jwtUtilWithRedis.removeTokenFromRedis(token);
+            } catch (Exception e) {
+                logger.error("로그아웃 중 오류 발생: {}", e.getMessage());
+            }
         }
 
         logger.info("로그아웃 성공");

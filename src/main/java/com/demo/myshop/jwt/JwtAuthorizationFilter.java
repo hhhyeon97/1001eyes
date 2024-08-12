@@ -30,36 +30,36 @@ public class JwtAuthorizationFilter extends OncePerRequestFilter {
     }
 
     @Override
-    protected void doFilterInternal(HttpServletRequest req, HttpServletResponse res, FilterChain filterChain) throws ServletException, IOException {
-
+    protected void doFilterInternal(HttpServletRequest req, HttpServletResponse res, FilterChain filterChain)
+            throws ServletException, IOException {
         String tokenValue = jwtUtilWithRedis.getTokenFromRequest(req);
 
         if (StringUtils.hasText(tokenValue)) {
-            // JWT 토큰 substring
-            tokenValue = jwtUtilWithRedis.substringToken(tokenValue);
-            log.info(tokenValue);
-
-            // Redis에서 토큰의 활성화 여부 검증
-            if (!jwtUtilWithRedis.isTokenActive(tokenValue)) {
-                log.error("Token Error");
-                // 토큰 검증 실패 시 쿠키 제거
-                removeJwtCookie(res);
-                // 클라이언트에게 401 상태 코드와 메시지 반환
-                res.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
-                res.getWriter().write("토큰이 만료되었습니다. 다시 로그인해주세요.");
-                return;
-            }
-
-            Claims info = jwtUtilWithRedis.getUserInfoFromToken(tokenValue);
-
             try {
+                // JWT 토큰 substring
+                tokenValue = jwtUtilWithRedis.substringToken(tokenValue, req, res); // 수정된 부분
+                log.info("Token: {}", tokenValue);
+
+                if (!jwtUtilWithRedis.validateToken(tokenValue)) {
+                    log.error("Token validation failed");
+                    // 토큰 검증 실패 시 쿠키 제거
+                    removeJwtCookie(res);
+                    // 리디렉션 또는 에러 응답 처리 (필요에 따라 추가)
+                    res.sendError(HttpServletResponse.SC_UNAUTHORIZED, "Invalid or expired token");
+                    return;
+                }
+
+                Claims info = jwtUtilWithRedis.getUserInfoFromToken(tokenValue);
                 setAuthentication(info.getSubject());
+
             } catch (Exception e) {
-                log.error(e.getMessage());
+                log.error("Error processing token: {}", e.getMessage());
+                // 쿠키 제거 및 에러 응답 처리
+                removeJwtCookie(res);
+                res.sendError(HttpServletResponse.SC_UNAUTHORIZED, "Token processing error");
                 return;
             }
         }
-
         filterChain.doFilter(req, res);
     }
 

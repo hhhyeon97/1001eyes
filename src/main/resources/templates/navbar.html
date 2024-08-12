@@ -12,13 +12,13 @@
     <a href="#">마이페이지</a>
     <div id="auth-links">
     </div>
+    <a href="/api/user/logout">로그아웃</a>
     <a href="/">메인페이지</a>
 </div>
 
 <script>
     document.addEventListener('DOMContentLoaded', function() {
         const authLinks = document.getElementById('auth-links');
-
         // 로그인 상태를 확인하는 API 호출
         fetch('/api/user/check-auth', { credentials: 'include' }) // 쿠키를 포함하여 요청
             .then(response => response.json())
