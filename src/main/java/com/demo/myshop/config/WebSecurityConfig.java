@@ -68,6 +68,15 @@ public class WebSecurityConfig {
                         .loginPage("/api/user/login-form").permitAll()
         );
 
+        // 로그아웃 설정 추가
+        http.logout((logout) ->
+                logout
+                        .logoutUrl("/api/user/logout") // 로그아웃 요청 URL
+                        .deleteCookies("Authorization") // 쿠키 삭제
+                        .invalidateHttpSession(true) // 세션 무효화 (세션을 사용하는 경우)
+                        .permitAll()
+        );
+
         // 필터 관리
         http.addFilterBefore(jwtAuthorizationFilter(), JwtAuthenticationFilter.class);
         http.addFilterBefore(jwtAuthenticationFilter(), UsernamePasswordAuthenticationFilter.class);

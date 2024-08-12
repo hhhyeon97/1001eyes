@@ -127,5 +127,13 @@ public class JwtUtil {
         }
         return null;
     }
+//
+//    // JWT Cookie 삭제
+//    public void deleteJwtCookie(HttpServletResponse res) {
+//        Cookie cookie = new Cookie(AUTHORIZATION_HEADER, null);
+//        cookie.setPath("/");
+//        cookie.setMaxAge(0); // 쿠키 만료 시간 0으로 설정
+//        res.addCookie(cookie);
+//    }
 
 }
