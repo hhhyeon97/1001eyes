@@ -21,25 +21,26 @@ import java.io.IOException;
 @Slf4j(topic = "JWT 검증 및 인가")
 public class JwtAuthorizationFilter extends OncePerRequestFilter {
 
-    private final JwtUtil jwtUtil;
+    private final JwtUtilWithRedis jwtUtilWithRedis;
     private final UserDetailsServiceImpl userDetailsService;
 
-    public JwtAuthorizationFilter(JwtUtil jwtUtil, UserDetailsServiceImpl userDetailsService) {
-        this.jwtUtil = jwtUtil;
+    public JwtAuthorizationFilter(JwtUtilWithRedis jwtUtilWithRedis, UserDetailsServiceImpl userDetailsService) {
+        this.jwtUtilWithRedis = jwtUtilWithRedis;
         this.userDetailsService = userDetailsService;
     }
 
     @Override
     protected void doFilterInternal(HttpServletRequest req, HttpServletResponse res, FilterChain filterChain) throws ServletException, IOException {
 
-        String tokenValue = jwtUtil.getTokenFromRequest(req);
+        String tokenValue = jwtUtilWithRedis.getTokenFromRequest(req);
 
         if (StringUtils.hasText(tokenValue)) {
             // JWT 토큰 substring
-            tokenValue = jwtUtil.substringToken(tokenValue);
+            tokenValue = jwtUtilWithRedis.substringToken(tokenValue);
             log.info(tokenValue);
 
-            if (!jwtUtil.validateToken(tokenValue)) {
+            // Redis에서 토큰의 활성화 여부 검증
+            if (!jwtUtilWithRedis.isTokenActive(tokenValue)) {
                 log.error("Token Error");
                 // 토큰 검증 실패 시 쿠키 제거
                 removeJwtCookie(res);
@@ -49,7 +50,7 @@ public class JwtAuthorizationFilter extends OncePerRequestFilter {
                 return;
             }
 
-            Claims info = jwtUtil.getUserInfoFromToken(tokenValue);
+            Claims info = jwtUtilWithRedis.getUserInfoFromToken(tokenValue);
 
             try {
                 setAuthentication(info.getSubject());
@@ -64,7 +65,7 @@ public class JwtAuthorizationFilter extends OncePerRequestFilter {
 
     // 쿠키 제거 메서드
     private void removeJwtCookie(HttpServletResponse res) {
-        Cookie cookie = new Cookie(JwtUtil.AUTHORIZATION_HEADER, null);
+        Cookie cookie = new Cookie(JwtUtilWithRedis.AUTHORIZATION_HEADER, null);
         cookie.setPath("/");
         cookie.setMaxAge(0); // 쿠키를 즉시 만료
         res.addCookie(cookie);

@@ -3,6 +3,7 @@ package com.demo.myshop.config;
 import com.demo.myshop.jwt.JwtAuthenticationFilter;
 import com.demo.myshop.jwt.JwtAuthorizationFilter;
 import com.demo.myshop.jwt.JwtUtil;
+import com.demo.myshop.jwt.JwtUtilWithRedis;
 import com.demo.myshop.security.CustomLogoutSuccessHandler;
 import com.demo.myshop.security.UserDetailsServiceImpl;
 import org.springframework.boot.autoconfigure.security.servlet.PathRequest;
@@ -20,12 +21,12 @@ import org.springframework.security.web.authentication.UsernamePasswordAuthentic
 @EnableWebSecurity // Spring Security 지원을 가능하게 함
 public class WebSecurityConfig {
 
-    private final JwtUtil jwtUtil;
+    private final JwtUtilWithRedis jwtUtilWithRedis;
     private final UserDetailsServiceImpl userDetailsService;
     private final AuthenticationConfiguration authenticationConfiguration;
 
-    public WebSecurityConfig(JwtUtil jwtUtil, UserDetailsServiceImpl userDetailsService, AuthenticationConfiguration authenticationConfiguration) {
-        this.jwtUtil = jwtUtil;
+    public WebSecurityConfig(JwtUtilWithRedis jwtUtilWithRedis, UserDetailsServiceImpl userDetailsService, AuthenticationConfiguration authenticationConfiguration) {
+        this.jwtUtilWithRedis = jwtUtilWithRedis;
         this.userDetailsService = userDetailsService;
         this.authenticationConfiguration = authenticationConfiguration;
     }
@@ -37,19 +38,19 @@ public class WebSecurityConfig {
 
     @Bean
     public JwtAuthenticationFilter jwtAuthenticationFilter() throws Exception {
-        JwtAuthenticationFilter filter = new JwtAuthenticationFilter(jwtUtil);
+        JwtAuthenticationFilter filter = new JwtAuthenticationFilter(jwtUtilWithRedis);
         filter.setAuthenticationManager(authenticationManager(authenticationConfiguration));
         return filter;
     }
 
     @Bean
     public JwtAuthorizationFilter jwtAuthorizationFilter() {
-        return new JwtAuthorizationFilter(jwtUtil, userDetailsService);
+        return new JwtAuthorizationFilter(jwtUtilWithRedis, userDetailsService);
     }
 
     @Bean
-    public CustomLogoutSuccessHandler logoutSuccessHandler() {
-        return new CustomLogoutSuccessHandler();
+    public CustomLogoutSuccessHandler logoutSuccessHandler(JwtUtilWithRedis jwtUtilWithRedis) {
+        return new CustomLogoutSuccessHandler(jwtUtilWithRedis);
     }
 
     @Bean
@@ -80,7 +81,7 @@ public class WebSecurityConfig {
                         .logoutUrl("/api/user/logout") // 로그아웃 요청 URL
                         .deleteCookies("Authorization") // 쿠키 삭제
                         .invalidateHttpSession(true) // 세션 무효화 (세션을 사용하는 경우)
-                        .logoutSuccessHandler(logoutSuccessHandler()) // 로그아웃 성공 핸들러 설정
+                        .logoutSuccessHandler(logoutSuccessHandler(jwtUtilWithRedis)) // 로그아웃 성공 핸들러 설정
                         .permitAll()
         );
 

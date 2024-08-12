@@ -25,8 +25,7 @@ public class ProductController {
 
     // 상품 등록 폼
     @GetMapping("/add-form")
-    public String productForm() {
-        return "create";
+    public String productForm() {return "create";
     }
     // 상품 등록
     @PostMapping("/add")

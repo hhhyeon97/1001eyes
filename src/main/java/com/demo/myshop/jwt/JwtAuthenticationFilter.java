@@ -20,10 +20,10 @@ import java.io.IOException;
 
 @Slf4j(topic = "로그인 및 JWT 생성")
 public class JwtAuthenticationFilter extends UsernamePasswordAuthenticationFilter {
-    private final JwtUtil jwtUtil;
+    private final JwtUtilWithRedis jwtUtilWithRedis;
 
-    public JwtAuthenticationFilter(JwtUtil jwtUtil) {
-        this.jwtUtil = jwtUtil;
+    public JwtAuthenticationFilter(JwtUtilWithRedis jwtUtilWithRedis) {
+        this.jwtUtilWithRedis = jwtUtilWithRedis;
         setFilterProcessesUrl("/api/user/login");
     }
 
@@ -52,13 +52,17 @@ public class JwtAuthenticationFilter extends UsernamePasswordAuthenticationFilte
         String username = ((UserDetailsImpl) authResult.getPrincipal()).getUsername();
         UserRoleEnum role = ((UserDetailsImpl) authResult.getPrincipal()).getUser().getRole();
 
-        String token = jwtUtil.createToken(username, role);
-        jwtUtil.addJwtToCookie(token, response);
+        String token = jwtUtilWithRedis.createToken(username, role);
+
+        // Redis에 토큰 저장
+        jwtUtilWithRedis.saveTokenInRedis(token, 15 * 60); // 15분 설정 (초 단위)
+
+        jwtUtilWithRedis.addJwtToCookie(token, response);
     }
 
     @Override
     protected void unsuccessfulAuthentication(HttpServletRequest request, HttpServletResponse response, AuthenticationException failed) throws IOException, ServletException {
         log.info("로그인 실패");
-        response.setStatus(401);
+        response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
     }
 }
