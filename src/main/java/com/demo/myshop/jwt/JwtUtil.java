@@ -32,7 +32,7 @@ public class JwtUtil {
     // Token 식별자 (규칙 같은 것! 토큰 앞에 붙일 것이고 한 칸 띄어쓰기 주의)
     public static final String BEARER_PREFIX = "Bearer ";
     // 토큰 만료시간
-    private final long TOKEN_TIME = 60 * 60 * 1000L; // 60분
+    private final long TOKEN_TIME = 15000L; // 15초 (test)
 
     @Value("${jwt.secret.key}") // Base64 Encode 한 SecretKey
     private String secretKey;
@@ -127,13 +127,6 @@ public class JwtUtil {
         }
         return null;
     }
-//
-//    // JWT Cookie 삭제
-//    public void deleteJwtCookie(HttpServletResponse res) {
-//        Cookie cookie = new Cookie(AUTHORIZATION_HEADER, null);
-//        cookie.setPath("/");
-//        cookie.setMaxAge(0); // 쿠키 만료 시간 0으로 설정
-//        res.addCookie(cookie);
-//    }
+
 
 }

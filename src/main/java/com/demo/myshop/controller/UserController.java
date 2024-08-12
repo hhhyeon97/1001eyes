@@ -1,20 +1,16 @@
 package com.demo.myshop.controller;
 
 
-
-import com.demo.myshop.dto.LoginRequestDto;
 import com.demo.myshop.dto.RegisterRequestDto;
+import com.demo.myshop.jwt.JwtUtil;
 import com.demo.myshop.service.UserService;
-import jakarta.servlet.http.Cookie;
-import jakarta.servlet.http.HttpServletResponse;
-import org.springframework.security.authentication.AnonymousAuthenticationToken;
-import org.springframework.security.core.Authentication;
-import org.springframework.security.core.context.SecurityContextHolder;
+import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 
+import java.util.HashMap;
 import java.util.Map;
 
 @Controller
@@ -22,9 +18,12 @@ import java.util.Map;
 public class UserController {
 
     private final UserService userService;
+    private final JwtUtil jwtUtil;
 
-    public UserController(UserService userService) {
+    public UserController(UserService userService,JwtUtil jwtUtil) {
         this.userService = userService;
+        this.jwtUtil = jwtUtil;
+
     }
 
     // 회원가입 페이지
@@ -46,13 +45,18 @@ public class UserController {
         return "login";
     }
 
-//
-//    @PostMapping("/logout")
-//    public void logout(HttpServletResponse response) {
-//        Cookie cookie = new Cookie("Authorization", null);
-//        cookie.setPath("/");
-//        cookie.setMaxAge(0); // 쿠키를 즉시 만료시킴
-//        response.addCookie(cookie);
-//    }
+    @GetMapping("/check-auth")
+    public Map<String, Boolean> checkAuth(HttpServletRequest req) {
+        String token = jwtUtil.getTokenFromRequest(req);
 
+        boolean isAuthenticated = false;
+        if (token != null && jwtUtil.validateToken(token)) {
+            isAuthenticated = true;
+        }
+
+        Map<String, Boolean> response = new HashMap<>();
+        response.put("isAuthenticated", isAuthenticated);
+
+        return response;
+    }
 }

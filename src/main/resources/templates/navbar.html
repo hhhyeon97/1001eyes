@@ -1,9 +1,56 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <title>My Shop</title>
+    <meta charset="UTF-8">
+</head>
+<body>
 <div th:fragment="navbar" class="navbar_wrap">
     <a href="/api/product/add-form">상품 등록하러 가기</a>
     <a href="/api/product/list">상품 리스트 조회</a>
     <a href="#">장바구니</a>
     <a href="#">마이페이지</a>
-    <a href="/api/user/login-form">로그인</a>
-    <a href="/api/user/logout">로그아웃</a>
+    <div id="auth-links">
+    </div>
     <a href="/">메인페이지</a>
 </div>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const authLinks = document.getElementById('auth-links');
+
+        // 로그인 상태를 확인하는 API 호출
+        fetch('/api/user/check-auth', { credentials: 'include' }) // 쿠키를 포함하여 요청
+            .then(response => response.json())
+            .then(data => {
+                if (data.isAuthenticated) {
+                    // 로그인된 경우
+                    authLinks.innerHTML = '<a href="#" id="logout-btn">로그아웃</a>';
+                    document.getElementById('logout-btn').addEventListener('click', async function(event) {
+                        event.preventDefault();
+                        try {
+                            const response = await fetch('/api/user/logout', {
+                                method: 'POST',
+                                credentials: 'include' // 쿠키를 포함하여 요청
+                            });
+                            if (response.ok) {
+                                window.location.href = '/'; // 로그아웃 후 리디렉션
+                            } else {
+                                console.error('로그아웃 요청 중 오류 발생');
+                            }
+                        } catch (error) {
+                            console.error('로그아웃 요청 중 오류 발생:', error);
+                        }
+                    });
+                } else {
+                    // 비로그인 상태인 경우
+                    authLinks.innerHTML = '<a href="/api/user/login-form">로그인</a>';
+                }
+            })
+            .catch(error => {
+                console.error('인증 상태 확인 중 오류 발생:', error);
+            });
+    });
+</script>
+</body>
+</html>

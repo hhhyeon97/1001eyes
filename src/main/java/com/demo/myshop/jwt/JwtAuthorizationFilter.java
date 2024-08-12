@@ -4,6 +4,7 @@ import com.demo.myshop.security.UserDetailsServiceImpl;
 import io.jsonwebtoken.Claims;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
+import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.extern.slf4j.Slf4j;
@@ -40,6 +41,11 @@ public class JwtAuthorizationFilter extends OncePerRequestFilter {
 
             if (!jwtUtil.validateToken(tokenValue)) {
                 log.error("Token Error");
+                // 토큰 검증 실패 시 쿠키 제거
+                removeJwtCookie(res);
+                // 클라이언트에게 401 상태 코드와 메시지 반환
+                res.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
+                res.getWriter().write("토큰이 만료되었습니다. 다시 로그인해주세요.");
                 return;
             }
 
@@ -54,6 +60,14 @@ public class JwtAuthorizationFilter extends OncePerRequestFilter {
         }
 
         filterChain.doFilter(req, res);
+    }
+
+    // 쿠키 제거 메서드
+    private void removeJwtCookie(HttpServletResponse res) {
+        Cookie cookie = new Cookie(JwtUtil.AUTHORIZATION_HEADER, null);
+        cookie.setPath("/");
+        cookie.setMaxAge(0); // 쿠키를 즉시 만료
+        res.addCookie(cookie);
     }
 
     // 인증 처리
