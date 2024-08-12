@@ -3,6 +3,7 @@ package com.demo.myshop.controller;
 
 import com.demo.myshop.dto.RegisterRequestDto;
 import com.demo.myshop.jwt.JwtUtil;
+import com.demo.myshop.jwt.JwtUtilWithRedis;
 import com.demo.myshop.service.UserService;
 import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.stereotype.Controller;
@@ -18,11 +19,11 @@ import java.util.Map;
 public class UserController {
 
     private final UserService userService;
-    private final JwtUtil jwtUtil;
+    private final JwtUtilWithRedis jwtUtilWithRedis;
 
-    public UserController(UserService userService,JwtUtil jwtUtil) {
+    public UserController(UserService userService,JwtUtilWithRedis jwtUtilWithRedis) {
         this.userService = userService;
-        this.jwtUtil = jwtUtil;
+        this.jwtUtilWithRedis = jwtUtilWithRedis;
 
     }
 
@@ -47,10 +48,10 @@ public class UserController {
 
     @GetMapping("/check-auth")
     public Map<String, Boolean> checkAuth(HttpServletRequest req) {
-        String token = jwtUtil.getTokenFromRequest(req);
+        String token = jwtUtilWithRedis.getTokenFromRequest(req);
 
         boolean isAuthenticated = false;
-        if (token != null && jwtUtil.validateToken(token)) {
+        if (token != null && jwtUtilWithRedis.isTokenActive(token)) {
             isAuthenticated = true;
         }
 
