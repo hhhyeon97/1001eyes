@@ -3,6 +3,7 @@ package com.demo.myshop.config;
 import com.demo.myshop.jwt.JwtAuthenticationFilter;
 import com.demo.myshop.jwt.JwtAuthorizationFilter;
 import com.demo.myshop.jwt.JwtUtil;
+import com.demo.myshop.security.CustomLogoutSuccessHandler;
 import com.demo.myshop.security.UserDetailsServiceImpl;
 import org.springframework.boot.autoconfigure.security.servlet.PathRequest;
 import org.springframework.context.annotation.Bean;
@@ -47,6 +48,11 @@ public class WebSecurityConfig {
     }
 
     @Bean
+    public CustomLogoutSuccessHandler logoutSuccessHandler() {
+        return new CustomLogoutSuccessHandler();
+    }
+
+    @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         // CSRF 설정
         http.csrf((csrf) -> csrf.disable());
@@ -68,11 +74,13 @@ public class WebSecurityConfig {
                         .loginPage("/api/user/login-form").permitAll()
         );
 
+        // 로그아웃 설정
         http.logout((logout) ->
                 logout
                         .logoutUrl("/api/user/logout") // 로그아웃 요청 URL
                         .deleteCookies("Authorization") // 쿠키 삭제
                         .invalidateHttpSession(true) // 세션 무효화 (세션을 사용하는 경우)
+                        .logoutSuccessHandler(logoutSuccessHandler()) // 로그아웃 성공 핸들러 설정
                         .permitAll()
         );
 
