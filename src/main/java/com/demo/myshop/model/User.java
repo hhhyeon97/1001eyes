@@ -41,17 +41,22 @@ public class User {
     @Enumerated(value = EnumType.STRING)
     private UserRoleEnum role;
 
+    private boolean isEmailVerified; // 이메일 인증 상태
+    private String emailVerificationToken; // 이메일 인증 토큰
+
     @CreationTimestamp
     private LocalDateTime created_at;
 
     @UpdateTimestamp
     private LocalDateTime updated_at;
 
-    public User(String username, String password, String email, String phone, UserRoleEnum role) {
+    public User(String username, String password, String email, String phone, UserRoleEnum role, boolean isEmailVerified, String emailVerificationToken) {
         this.username = username;
         this.password = password;
         this.email = email;
         this.phone = phone;
         this.role = role;
+        this.isEmailVerified = isEmailVerified;
+        this.emailVerificationToken = emailVerificationToken;
     }
 }

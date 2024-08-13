@@ -25,16 +25,15 @@ public class CustomLogoutSuccessHandler implements LogoutSuccessHandler {
     public void onLogoutSuccess(HttpServletRequest request, HttpServletResponse response, Authentication authentication)
             throws IOException, ServletException {
         String token = jwtUtilWithRedis.getTokenFromRequest(request);
-        if (token != null) {
-            try {
-                // substringToken 호출
-                token = jwtUtilWithRedis.substringToken(token, request, response);
-                jwtUtilWithRedis.removeTokenFromRedis(token);
-            } catch (Exception e) {
-                logger.error("로그아웃 중 오류 발생: {}", e.getMessage());
-            }
-        }
-
+//        if (token != null) {
+//            try {
+//                // substringToken 호출
+//                token = jwtUtilWithRedis.substringToken(token, request, response);
+//                jwtUtilWithRedis.removeTokenFromRedis(token);
+//            } catch (Exception e) {
+//                logger.error("로그아웃 중 오류 발생: {}", e.getMessage());
+//            }
+//        }
         logger.info("로그아웃 성공");
 
         response.setStatus(HttpServletResponse.SC_OK);

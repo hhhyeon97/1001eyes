@@ -11,6 +11,7 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
 import java.util.Optional;
+import java.util.UUID;
 
 @Service
 public class UserService {
@@ -57,11 +58,16 @@ public class UserService {
         }
 
         // 사용자 등록
-        User user = new User(username, password, email, phone, role);
+        User user = new User(username, password, email, phone, role, false, UUID.randomUUID().toString()); // 토큰 생성 및 저장
         userRepository.save(user);
+
+        // 이메일 발송
+        String verificationLink = "http://localhost:8080/api/user/verify?email=" + email + "&token=" + user.getEmailVerificationToken();
+        String subject = "Email Verification";
+        String text = "Please click the following link to verify your email: " + verificationLink;
+        sendEmail(email, subject, text);
     }
 
-//===== 메일 관련 테스트
     public String handleEmailVerification(String email) {
         Optional<User> existingUser = userRepository.findByEmail(email);
 
@@ -69,11 +75,30 @@ public class UserService {
             return "이미 가입된 유저입니다.";
         } else {
             // 이메일 발송 로직
-            String verificationLink = "http://localhost:8080/api/user/verify?email=" + email;
+            String verificationToken = UUID.randomUUID().toString(); // 인증 토큰 생성
+            String verificationLink = "http://localhost:8080/api/user/verify?email=" + email + "&token=" + verificationToken;
             String subject = "Email Verification";
             String text = "Please click the following link to verify your email: " + verificationLink;
             sendEmail(email, subject, text);
             return "Verification email sent to " + email;
+        }
+    }
+
+    public String verifyEmail(String email, String token) {
+        Optional<User> userOptional = userRepository.findByEmail(email);
+        if (userOptional.isPresent()) {
+            User user = userOptional.get();
+            // 검증 로직: 제공된 토큰과 저장된 토큰이 일치하는지 확인
+            if (token.equals(user.getEmailVerificationToken())) {
+                user.setEmailVerified(true);
+                user.setEmailVerificationToken(null); // 인증 후 토큰 삭제
+                userRepository.save(user);
+                return "이메일 인증 성공. 이제 회원가입을 완료할 수 있습니다.";
+            } else {
+                return "유효하지 않은 인증 토큰입니다.";
+            }
+        } else {
+            return "가입된 사용자가 없습니다.";
         }
     }
 

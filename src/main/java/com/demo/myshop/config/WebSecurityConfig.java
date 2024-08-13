@@ -70,10 +70,10 @@ public class WebSecurityConfig {
                         .anyRequest().authenticated() // 그 외 모든 요청 인증처리
         );
 
-        http.formLogin((formLogin) ->
-                formLogin
-                        .loginPage("/api/user/login-form").permitAll()
-        );
+//        http.formLogin((formLogin) ->
+//                formLogin
+//                        .loginPage("/api/user/login-form").permitAll()
+//        );
 
         // 로그아웃 설정
         http.logout((logout) ->
