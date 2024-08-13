@@ -1,13 +1,12 @@
 package com.demo.myshop.service;
 
 
-import com.demo.myshop.dto.LoginRequestDto;
 import com.demo.myshop.dto.RegisterRequestDto;
 import com.demo.myshop.model.User;
 import com.demo.myshop.model.UserRoleEnum;
 import com.demo.myshop.repository.UserRepository;
-import com.demo.myshop.jwt.JwtUtil;
-import jakarta.servlet.http.HttpServletResponse;
+import org.springframework.mail.SimpleMailMessage;
+import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
@@ -18,11 +17,12 @@ public class UserService {
 
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
-    private final JwtUtil jwtUtil;
-    public UserService(UserRepository userRepository, PasswordEncoder passwordEncoder, JwtUtil jwtUtil) {
+    private final JavaMailSender mailSender;
+
+    public UserService(UserRepository userRepository, PasswordEncoder passwordEncoder,JavaMailSender mailSender) {
         this.userRepository = userRepository;
         this.passwordEncoder = passwordEncoder;
-        this.jwtUtil = jwtUtil;
+        this.mailSender = mailSender;
     }
 
     // ADMIN_TOKEN
@@ -59,6 +59,30 @@ public class UserService {
         // 사용자 등록
         User user = new User(username, password, email, phone, role);
         userRepository.save(user);
+    }
+
+//===== 메일 관련 테스트
+    public String handleEmailVerification(String email) {
+        Optional<User> existingUser = userRepository.findByEmail(email);
+
+        if (existingUser.isPresent()) {
+            return "이미 가입된 유저입니다.";
+        } else {
+            // 이메일 발송 로직
+            String verificationLink = "http://localhost:8080/api/user/verify?email=" + email;
+            String subject = "Email Verification";
+            String text = "Please click the following link to verify your email: " + verificationLink;
+            sendEmail(email, subject, text);
+            return "Verification email sent to " + email;
+        }
+    }
+
+    private void sendEmail(String to, String subject, String text) {
+        SimpleMailMessage message = new SimpleMailMessage();
+        message.setTo(to);
+        message.setSubject(subject);
+        message.setText(text);
+        mailSender.send(message);
     }
 
 }
