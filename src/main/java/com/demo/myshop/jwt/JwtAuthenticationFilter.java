@@ -20,6 +20,7 @@ import java.io.IOException;
 
 @Slf4j(topic = "로그인 및 JWT 생성")
 public class JwtAuthenticationFilter extends UsernamePasswordAuthenticationFilter {
+
     private final JwtUtilWithRedis jwtUtilWithRedis;
 
     public JwtAuthenticationFilter(JwtUtilWithRedis jwtUtilWithRedis) {
@@ -32,12 +33,10 @@ public class JwtAuthenticationFilter extends UsernamePasswordAuthenticationFilte
         log.info("로그인 시도");
         try {
             LoginRequestDto requestDto = new ObjectMapper().readValue(request.getInputStream(), LoginRequestDto.class);
-
             return getAuthenticationManager().authenticate(
                     new UsernamePasswordAuthenticationToken(
                             requestDto.getUsername(),
-                            requestDto.getPassword(),
-                            null
+                            requestDto.getPassword()
                     )
             );
         } catch (IOException e) {
@@ -52,14 +51,9 @@ public class JwtAuthenticationFilter extends UsernamePasswordAuthenticationFilte
         String username = ((UserDetailsImpl) authResult.getPrincipal()).getUsername();
         UserRoleEnum role = ((UserDetailsImpl) authResult.getPrincipal()).getUser().getRole();
 
-        // 기존 jwt 토큰 저장
+        // JWT 토큰 생성 및 쿠키에 저장
         String token = jwtUtilWithRedis.createToken(username, role);
         jwtUtilWithRedis.addJwtToCookie(token, response);
-
-        // 업데이트 코드 : Redis에 토큰 저장 -> 뭔가 꼬임 일단 주석
-//        String token = jwtUtilWithRedis.createToken(username, role);
-//        jwtUtilWithRedis.saveTokenInRedis(token, 15 * 60); // 15분 설정 (초 단위)
-//        jwtUtilWithRedis.addJwtToCookie(token, response);
     }
 
     @Override
