@@ -32,6 +32,8 @@ public class User {
 
     private String phone;
 
+    private String name;
+
     @OneToMany(mappedBy = "user")
     private List<Address> addresses;  // 하나의 사용자는 여러 주소를 가질 수 있음
 
@@ -50,11 +52,12 @@ public class User {
     @UpdateTimestamp
     private LocalDateTime updated_at;
 
-    public User(String username, String password, String email, String phone, UserRoleEnum role, boolean isEmailVerified, String emailVerificationToken) {
+    public User(String username, String password, String email, String phone, String name, UserRoleEnum role, boolean isEmailVerified, String emailVerificationToken) {
         this.username = username;
         this.password = password;
         this.email = email;
         this.phone = phone;
+        this.name = name;
         this.role = role;
         this.isEmailVerified = isEmailVerified;
         this.emailVerificationToken = emailVerificationToken;

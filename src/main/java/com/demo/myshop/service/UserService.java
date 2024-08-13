@@ -3,8 +3,10 @@ package com.demo.myshop.service;
 
 import com.demo.myshop.core.EncryptionUtils;
 import com.demo.myshop.dto.RegisterRequestDto;
+import com.demo.myshop.model.Address;
 import com.demo.myshop.model.User;
 import com.demo.myshop.model.UserRoleEnum;
+import com.demo.myshop.repository.AddressRepository;
 import com.demo.myshop.repository.UserRepository;
 import org.springframework.mail.SimpleMailMessage;
 import org.springframework.mail.javamail.JavaMailSender;
@@ -20,11 +22,13 @@ public class UserService {
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
     private final JavaMailSender mailSender;
+    private final AddressRepository addressRepository;
 
-    public UserService(UserRepository userRepository, PasswordEncoder passwordEncoder,JavaMailSender mailSender) {
+    public UserService(UserRepository userRepository, PasswordEncoder passwordEncoder,JavaMailSender mailSender, AddressRepository addressRepository) {
         this.userRepository = userRepository;
         this.passwordEncoder = passwordEncoder;
         this.mailSender = mailSender;
+        this.addressRepository = addressRepository;
     }
 
     // ADMIN_TOKEN
@@ -48,6 +52,7 @@ public class UserService {
         }
 
         String phone = requestDto.getPhone();
+        String name = requestDto.getName();
 
         // 사용자 ROLE 확인
         UserRoleEnum role = UserRoleEnum.USER;
@@ -61,17 +66,34 @@ public class UserService {
         // 데이터 암호화
         String encryptedEmail;
         String encryptedPhone;
+        String encryptedName;
+        String encryptedAddress;
+        String encryptedAddressDetail;
+        String encryptedZipcode;
+
         try {
             encryptedEmail = EncryptionUtils.encrypt(email);
             encryptedPhone = EncryptionUtils.encrypt(phone);
+            encryptedName = EncryptionUtils.encrypt(name);
+            encryptedAddress = EncryptionUtils.encrypt(requestDto.getAddress());
+            encryptedAddressDetail = EncryptionUtils.encrypt(requestDto.getAddressDetail());
+            encryptedZipcode = EncryptionUtils.encrypt(requestDto.getZipcode());
         } catch (Exception e) {
             throw new RuntimeException("데이터 암호화 실패", e);
         }
 
         // 사용자 등록
         String verificationToken = UUID.randomUUID().toString();
-        User user = new User(username, password, encryptedEmail, encryptedPhone, role, false, verificationToken); // 토큰 생성 및 저장
+        User user = new User(username, password, encryptedEmail, encryptedPhone, encryptedName, role, false, verificationToken); // 토큰 생성 및 저장
         userRepository.save(user);
+
+
+        // 주소 등록
+        Address address = new Address(encryptedAddress, encryptedAddressDetail, encryptedZipcode,
+                requestDto.getName(), requestDto.isDefaultAddress(),
+                requestDto.getAddressPhoneNumber(), requestDto.getAddressMessage(), user);
+        // 주소 리포지토리에 저장
+        addressRepository.save(address);
 
         // 이메일 발송
         String verificationLink = "http://localhost:8080/api/user/verify?email=" + encryptedEmail + "&token=" + verificationToken;
@@ -80,31 +102,7 @@ public class UserService {
         sendEmail(email, subject, text);
     }
 
-    public String handleEmailVerification(String email) {
-        Optional<User> existingUser = userRepository.findByEmail(email);
-
-        if (existingUser.isPresent()) {
-            return "이미 가입된 유저입니다.";
-        } else {
-            // 이메일 발송 로직
-            String verificationToken = UUID.randomUUID().toString(); // 인증 토큰 생성
-            String verificationLink = "http://localhost:8080/api/user/verify?email=" + email + "&token=" + verificationToken;
-            String subject = "Email Verification";
-            String text = "Please click the following link to verify your email: " + verificationLink;
-            sendEmail(email, subject, text);
-            return "Verification email sent to " + email;
-        }
-    }
-
 public String verifyEmail(String encryptedEmail, String token) {
-//    String decryptedEmail;
-//    try {
-//        decryptedEmail = EncryptionUtils.decrypt(encryptedEmail);
-//        System.out.println("decryptedEmail = " + decryptedEmail);
-//    } catch (Exception e) {
-//        throw new RuntimeException("이메일 복호화 실패", e);
-//    }
-
     Optional<User> userOptional = userRepository.findByEmail(encryptedEmail);
     if (userOptional.isPresent()) {
         User user = userOptional.get();
