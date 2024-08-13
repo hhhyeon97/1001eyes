@@ -1,6 +1,7 @@
 package com.demo.myshop.service;
 
 
+import com.demo.myshop.core.EncryptionUtils;
 import com.demo.myshop.dto.RegisterRequestDto;
 import com.demo.myshop.model.User;
 import com.demo.myshop.model.UserRoleEnum;
@@ -29,7 +30,7 @@ public class UserService {
     // ADMIN_TOKEN
     private final String ADMIN_TOKEN = "AAABnvxRVklrnYxKZ0aHgTBcXukeZygoC";
 
-    public void join(RegisterRequestDto requestDto) {  // TODO : 주소 부분 추가
+    public void join(RegisterRequestDto requestDto) {
         String username = requestDto.getUsername();
         String password = passwordEncoder.encode(requestDto.getPassword());
 
@@ -57,12 +58,23 @@ public class UserService {
             role = UserRoleEnum.ADMIN;
         }
 
+        // 데이터 암호화
+        String encryptedEmail;
+        String encryptedPhone;
+        try {
+            encryptedEmail = EncryptionUtils.encrypt(email);
+            encryptedPhone = EncryptionUtils.encrypt(phone);
+        } catch (Exception e) {
+            throw new RuntimeException("데이터 암호화 실패", e);
+        }
+
         // 사용자 등록
-        User user = new User(username, password, email, phone, role, false, UUID.randomUUID().toString()); // 토큰 생성 및 저장
+        String verificationToken = UUID.randomUUID().toString();
+        User user = new User(username, password, encryptedEmail, encryptedPhone, role, false, verificationToken); // 토큰 생성 및 저장
         userRepository.save(user);
 
         // 이메일 발송
-        String verificationLink = "http://localhost:8080/api/user/verify?email=" + email + "&token=" + user.getEmailVerificationToken();
+        String verificationLink = "http://localhost:8080/api/user/verify?email=" + encryptedEmail + "&token=" + verificationToken;
         String subject = "Email Verification";
         String text = "Please click the following link to verify your email: " + verificationLink;
         sendEmail(email, subject, text);
@@ -84,24 +96,30 @@ public class UserService {
         }
     }
 
-    public String verifyEmail(String email, String token) {
-        Optional<User> userOptional = userRepository.findByEmail(email);
-        if (userOptional.isPresent()) {
-            User user = userOptional.get();
-            // 검증 로직: 제공된 토큰과 저장된 토큰이 일치하는지 확인
-            if (token.equals(user.getEmailVerificationToken())) {
-                user.setEmailVerified(true);
-                user.setEmailVerificationToken(null); // 인증 후 토큰 삭제
-                userRepository.save(user);
-                return "이메일 인증 성공. 이제 회원가입을 완료할 수 있습니다.";
-            } else {
-                return "유효하지 않은 인증 토큰입니다.";
-            }
-        } else {
-            return "가입된 사용자가 없습니다.";
-        }
-    }
+public String verifyEmail(String encryptedEmail, String token) {
+//    String decryptedEmail;
+//    try {
+//        decryptedEmail = EncryptionUtils.decrypt(encryptedEmail);
+//        System.out.println("decryptedEmail = " + decryptedEmail);
+//    } catch (Exception e) {
+//        throw new RuntimeException("이메일 복호화 실패", e);
+//    }
 
+    Optional<User> userOptional = userRepository.findByEmail(encryptedEmail);
+    if (userOptional.isPresent()) {
+        User user = userOptional.get();
+        if (token.equals(user.getEmailVerificationToken())) {
+            user.setEmailVerified(true);
+            user.setEmailVerificationToken(null); // 인증 후 토큰 삭제
+            userRepository.save(user);
+            return "이메일 인증 성공. 이제 회원가입을 완료할 수 있습니다.";
+        } else {
+            return "유효하지 않은 인증 토큰입니다.";
+        }
+    } else {
+        return "가입된 사용자가 없습니다.";
+    }
+}
     private void sendEmail(String to, String subject, String text) {
         SimpleMailMessage message = new SimpleMailMessage();
         message.setTo(to);
