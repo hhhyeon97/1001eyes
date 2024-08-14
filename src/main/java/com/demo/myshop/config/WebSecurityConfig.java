@@ -1,9 +1,8 @@
 package com.demo.myshop.config;
 
-import com.demo.myshop.jwt.JwtAuthenticationFilter;
-import com.demo.myshop.jwt.JwtAuthorizationFilter;
-import com.demo.myshop.jwt.JwtUtil;
-import com.demo.myshop.jwt.JwtUtilWithRedis;
+import com.demo.myshop.core.jwt.JwtAuthenticationFilter;
+import com.demo.myshop.core.jwt.JwtAuthorizationFilter;
+import com.demo.myshop.core.jwt.JwtUtil;
 import com.demo.myshop.security.CustomLogoutSuccessHandler;
 import com.demo.myshop.security.UserDetailsServiceImpl;
 import org.springframework.boot.autoconfigure.security.servlet.PathRequest;
@@ -21,12 +20,12 @@ import org.springframework.security.web.authentication.UsernamePasswordAuthentic
 @EnableWebSecurity // Spring Security 지원을 가능하게 함
 public class WebSecurityConfig {
 
-    private final JwtUtilWithRedis jwtUtilWithRedis;
+    private final JwtUtil jwtUtil;
     private final UserDetailsServiceImpl userDetailsService;
     private final AuthenticationConfiguration authenticationConfiguration;
 
-    public WebSecurityConfig(JwtUtilWithRedis jwtUtilWithRedis, UserDetailsServiceImpl userDetailsService, AuthenticationConfiguration authenticationConfiguration) {
-        this.jwtUtilWithRedis = jwtUtilWithRedis;
+    public WebSecurityConfig(JwtUtil jwtUtil, UserDetailsServiceImpl userDetailsService, AuthenticationConfiguration authenticationConfiguration) {
+        this.jwtUtil = jwtUtil;
         this.userDetailsService = userDetailsService;
         this.authenticationConfiguration = authenticationConfiguration;
     }
@@ -38,24 +37,24 @@ public class WebSecurityConfig {
 
     @Bean
     public JwtAuthenticationFilter jwtAuthenticationFilter() throws Exception {
-        JwtAuthenticationFilter filter = new JwtAuthenticationFilter(jwtUtilWithRedis);
+        JwtAuthenticationFilter filter = new JwtAuthenticationFilter(jwtUtil);
         filter.setAuthenticationManager(authenticationManager(authenticationConfiguration));
         return filter;
     }
 
     @Bean
     public JwtAuthorizationFilter jwtAuthorizationFilter() {
-        return new JwtAuthorizationFilter(jwtUtilWithRedis, userDetailsService);
+        return new JwtAuthorizationFilter(jwtUtil, userDetailsService);
     }
 
     @Bean
-    public CustomLogoutSuccessHandler logoutSuccessHandler(JwtUtilWithRedis jwtUtilWithRedis) {
-        return new CustomLogoutSuccessHandler(jwtUtilWithRedis);
+    public CustomLogoutSuccessHandler logoutSuccessHandler() {
+        return new CustomLogoutSuccessHandler();
     }
 
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
-        // CSRF 설정
+        // CSRF 설정 비활성화
         http.csrf((csrf) -> csrf.disable());
 
         // 기본 설정인 Session 방식은 사용하지 않고 JWT 방식을 사용하기 위한 설정
@@ -70,18 +69,13 @@ public class WebSecurityConfig {
                         .anyRequest().authenticated() // 그 외 모든 요청 인증처리
         );
 
-//        http.formLogin((formLogin) ->
-//                formLogin
-//                        .loginPage("/api/user/login-form").permitAll()
-//        );
-
         // 로그아웃 설정
         http.logout((logout) ->
                 logout
                         .logoutUrl("/api/user/logout") // 로그아웃 요청 URL
                         .deleteCookies("Authorization") // 쿠키 삭제
                         .invalidateHttpSession(true) // 세션 무효화 (세션을 사용하는 경우)
-                        .logoutSuccessHandler(logoutSuccessHandler(jwtUtilWithRedis)) // 로그아웃 성공 핸들러 설정
+                        .logoutSuccessHandler(logoutSuccessHandler()) // 로그아웃 성공 핸들러 설정
                         .permitAll()
         );
 
