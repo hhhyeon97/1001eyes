@@ -1,5 +1,4 @@
-package com.demo.myshop.jwt;
-
+package com.demo.myshop.core.jwt;
 
 import com.demo.myshop.dto.LoginRequestDto;
 import com.demo.myshop.model.UserRoleEnum;
@@ -19,11 +18,10 @@ import java.io.IOException;
 
 @Slf4j(topic = "로그인 및 JWT 생성")
 public class JwtAuthenticationFilter extends UsernamePasswordAuthenticationFilter {
+    private final JwtUtil jwtUtil;
 
-    private final JwtUtilWithRedis jwtUtilWithRedis;
-
-    public JwtAuthenticationFilter(JwtUtilWithRedis jwtUtilWithRedis) {
-        this.jwtUtilWithRedis = jwtUtilWithRedis;
+    public JwtAuthenticationFilter(JwtUtil jwtUtil) {
+        this.jwtUtil = jwtUtil;
         setFilterProcessesUrl("/api/user/login");
     }
 
@@ -32,10 +30,12 @@ public class JwtAuthenticationFilter extends UsernamePasswordAuthenticationFilte
         log.info("로그인 시도");
         try {
             LoginRequestDto requestDto = new ObjectMapper().readValue(request.getInputStream(), LoginRequestDto.class);
+
             return getAuthenticationManager().authenticate(
                     new UsernamePasswordAuthenticationToken(
                             requestDto.getUsername(),
-                            requestDto.getPassword()
+                            requestDto.getPassword(),
+                            null
                     )
             );
         } catch (IOException e) {
@@ -50,15 +50,13 @@ public class JwtAuthenticationFilter extends UsernamePasswordAuthenticationFilte
         String username = ((UserDetailsImpl) authResult.getPrincipal()).getUsername();
         UserRoleEnum role = ((UserDetailsImpl) authResult.getPrincipal()).getUser().getRole();
 
-        // JWT 토큰 생성 및 쿠키에 저장
-        String token = jwtUtilWithRedis.createToken(username, role);
-        jwtUtilWithRedis.addJwtToCookie(token, response);
+        String token = jwtUtil.createToken(username, role);
+        jwtUtil.addJwtToCookie(token, response);
     }
-
 
     @Override
     protected void unsuccessfulAuthentication(HttpServletRequest request, HttpServletResponse response, AuthenticationException failed) throws IOException, ServletException {
         log.info("로그인 실패");
-        response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
+        response.setStatus(401);
     }
 }

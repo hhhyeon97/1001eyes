@@ -1,9 +1,9 @@
 package com.demo.myshop.controller;
 
 import com.demo.myshop.core.ApiUtils;
+import com.demo.myshop.core.jwt.JwtUtil;
 import com.demo.myshop.dto.ChangePasswordRequestDto;
 import com.demo.myshop.dto.RegisterRequestDto;
-import com.demo.myshop.jwt.JwtUtilWithRedis;
 import com.demo.myshop.repository.UserRepository;
 import com.demo.myshop.service.UserService;
 import jakarta.servlet.http.HttpServletResponse;
@@ -16,13 +16,9 @@ import org.springframework.web.bind.annotation.*;
 public class UserController {
 
     private final UserService userService;
-    private final JwtUtilWithRedis jwtUtilWithRedis;
-    private final UserRepository userRepository;
 
-    public UserController(UserService userService, JwtUtilWithRedis jwtUtilWithRedis, UserRepository userRepository) {
+    public UserController(UserService userService) {
         this.userService = userService;
-        this.jwtUtilWithRedis = jwtUtilWithRedis;
-        this.userRepository = userRepository;
     }
 
     @PostMapping("/register")

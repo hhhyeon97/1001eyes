@@ -2,12 +2,14 @@ package com.demo.myshop.service;
 
 
 import com.demo.myshop.core.EncryptionUtils;
+import com.demo.myshop.core.jwt.JwtUtil;
 import com.demo.myshop.dto.RegisterRequestDto;
-import com.demo.myshop.jwt.JwtUtilWithRedis;
 import com.demo.myshop.model.Address;
+import com.demo.myshop.model.Cart;
 import com.demo.myshop.model.User;
 import com.demo.myshop.model.UserRoleEnum;
 import com.demo.myshop.repository.AddressRepository;
+import com.demo.myshop.repository.CartRepository;
 import com.demo.myshop.repository.UserRepository;
 import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.mail.SimpleMailMessage;
@@ -26,16 +28,18 @@ public class UserService {
     private final PasswordEncoder passwordEncoder;
     private final JavaMailSender mailSender;
     private final AddressRepository addressRepository;
-    private final JwtUtilWithRedis jwtUtilWithRedis;
+    private final JwtUtil jwtUtil;
+    private final CartRepository cartRepository;
 
-    public UserService(UserRepository userRepository, PasswordEncoder passwordEncoder, JavaMailSender mailSender, AddressRepository addressRepository, JwtUtilWithRedis jwtUtilWithRedis) {
+    public UserService(UserRepository userRepository, PasswordEncoder passwordEncoder, JavaMailSender mailSender, AddressRepository addressRepository, JwtUtil jwtUtil
+    , CartRepository cartRepository) {
         this.userRepository = userRepository;
         this.passwordEncoder = passwordEncoder;
         this.mailSender = mailSender;
         this.addressRepository = addressRepository;
-        this.jwtUtilWithRedis = jwtUtilWithRedis;
+        this.jwtUtil = jwtUtil;
+        this.cartRepository = cartRepository;
     }
-
     // ADMIN_TOKEN
     private final String ADMIN_TOKEN = "AAABnvxRVklrnYxKZ0aHgTBcXukeZygoC";
 
@@ -44,13 +48,13 @@ public class UserService {
         String username = requestDto.getUsername();
         String password = passwordEncoder.encode(requestDto.getPassword());
 
-        // 회원 중복 확인
+        // 중복 아이디 확인
         Optional<User> checkUsername = userRepository.findByUsername(username);
         if (checkUsername.isPresent()) {
             throw new IllegalArgumentException("중복된 사용자가 존재합니다.");
         }
 
-        // email 중복확인
+        // 중복 이메일 확인
         String email = requestDto.getEmail();
         Optional<User> checkEmail = userRepository.findByEmail(email);
         if (checkEmail.isPresent()) {
@@ -90,15 +94,20 @@ public class UserService {
 
         // 사용자 등록
         String verificationToken = UUID.randomUUID().toString();
-        User user = new User(username, password, encryptedEmail, encryptedPhone, encryptedName, role, false, verificationToken); // 토큰 생성 및 저장
+        // 토큰 생성 및 저장
+        User user = new User(username, password, encryptedEmail, encryptedPhone, encryptedName, role, false, verificationToken);
         userRepository.save(user);
 
+        // 장바구니 생성
+        Cart cart = new Cart();
+        cart.setUser(user);
+        cartRepository.save(cart);
+        System.out.println("user.getUsername() = " + user.getUsername());
 
         // 주소 등록
         Address address = new Address(encryptedAddress, encryptedAddressDetail, encryptedZipcode,
                 requestDto.getName(), requestDto.isDefaultAddress(),
                 requestDto.getAddressPhoneNumber(), requestDto.getAddressMessage(), user);
-        // 주소 리포지토리에 저장
         addressRepository.save(address);
 
         // 이메일 발송
@@ -125,25 +134,21 @@ public class UserService {
             return "가입된 사용자가 없습니다.";
         }
     }
-
+    // 패스워드 변경
     public void changePassword(String username, String oldPassword, String newPassword, HttpServletResponse response) {
         Optional<User> userOptional = userRepository.findByUsername(username);
         if (userOptional.isPresent()) {
             User user = userOptional.get();
-
             // 기존 비밀번호 확인
             if (!passwordEncoder.matches(oldPassword, user.getPassword())) {
                 throw new IllegalArgumentException("기존 비밀번호가 올바르지 않습니다.");
             }
-
             // 새로운 비밀번호 설정
             user.setPassword(passwordEncoder.encode(newPassword));
             userRepository.save(user);
-
-            // 모든 기기에서 로그아웃 처리
-            jwtUtilWithRedis.invalidateUserTokens(username, response);
-            System.out.println(username + "님 로그아웃 처리한다 !!");
-
+            // JWT 쿠키 삭제 (로그아웃 처리)
+            jwtUtil.removeJwtCookie(response);
+            System.out.println("패스워드 변경시 쿠키 삭제할거임" + response);
         } else {
             throw new UsernameNotFoundException("사용자를 찾을 수 없습니다.");
         }
@@ -158,4 +163,8 @@ public class UserService {
         mailSender.send(message);
     }
 
+    public User findByUsername(String username) {
+        Optional<User> userOptional = userRepository.findByUsername(username);
+        return userOptional.orElse(null); // 사용자가 없으면 null 반환
+    }
 }

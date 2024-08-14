@@ -1,4 +1,4 @@
-package com.demo.myshop.jwt;
+package com.demo.myshop.core.jwt;
 
 import com.demo.myshop.model.UserRoleEnum;
 import io.jsonwebtoken.*;
@@ -32,7 +32,7 @@ public class JwtUtil {
     // Token 식별자 (규칙 같은 것! 토큰 앞에 붙일 것이고 한 칸 띄어쓰기 주의)
     public static final String BEARER_PREFIX = "Bearer ";
     // 토큰 만료시간
-    private final long TOKEN_TIME = 15000L; // 15초 (test)
+    private final long TOKEN_TIME = 60 * 1000L; // 60초 (test)
 
     @Value("${jwt.secret.key}") // Base64 Encode 한 SecretKey
     private String secretKey;
@@ -126,6 +126,15 @@ public class JwtUtil {
             }
         }
         return null;
+    }
+
+    public void removeJwtCookie(HttpServletResponse response) {
+        Cookie cookie = new Cookie(AUTHORIZATION_HEADER, null);
+        cookie.setPath("/");
+        cookie.setHttpOnly(true);  // 클라이언트 측에서 접근 불가
+        cookie.setSecure(true);    // HTTPS에서만 전송
+        cookie.setMaxAge(0);       // 즉시 만료
+        response.addCookie(cookie);
     }
 
 
