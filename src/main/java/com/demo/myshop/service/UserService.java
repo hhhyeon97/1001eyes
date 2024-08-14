@@ -3,6 +3,7 @@ package com.demo.myshop.service;
 
 import com.demo.myshop.core.EncryptionUtils;
 import com.demo.myshop.dto.RegisterRequestDto;
+import com.demo.myshop.jwt.JwtUtilWithRedis;
 import com.demo.myshop.model.Address;
 import com.demo.myshop.model.User;
 import com.demo.myshop.model.UserRoleEnum;
@@ -10,6 +11,7 @@ import com.demo.myshop.repository.AddressRepository;
 import com.demo.myshop.repository.UserRepository;
 import org.springframework.mail.SimpleMailMessage;
 import org.springframework.mail.javamail.JavaMailSender;
+import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
@@ -23,17 +25,20 @@ public class UserService {
     private final PasswordEncoder passwordEncoder;
     private final JavaMailSender mailSender;
     private final AddressRepository addressRepository;
+    private final JwtUtilWithRedis jwtUtilWithRedis;
 
-    public UserService(UserRepository userRepository, PasswordEncoder passwordEncoder,JavaMailSender mailSender, AddressRepository addressRepository) {
+    public UserService(UserRepository userRepository, PasswordEncoder passwordEncoder, JavaMailSender mailSender, AddressRepository addressRepository, JwtUtilWithRedis jwtUtilWithRedis) {
         this.userRepository = userRepository;
         this.passwordEncoder = passwordEncoder;
         this.mailSender = mailSender;
         this.addressRepository = addressRepository;
+        this.jwtUtilWithRedis = jwtUtilWithRedis;
     }
 
     // ADMIN_TOKEN
     private final String ADMIN_TOKEN = "AAABnvxRVklrnYxKZ0aHgTBcXukeZygoC";
 
+    // 회원 가입
     public void join(RegisterRequestDto requestDto) {
         String username = requestDto.getUsername();
         String password = passwordEncoder.encode(requestDto.getPassword());
@@ -102,22 +107,49 @@ public class UserService {
         sendEmail(email, subject, text);
     }
 
-public String verifyEmail(String encryptedEmail, String token) {
-    Optional<User> userOptional = userRepository.findByEmail(encryptedEmail);
-    if (userOptional.isPresent()) {
-        User user = userOptional.get();
-        if (token.equals(user.getEmailVerificationToken())) {
-            user.setEmailVerified(true);
-            user.setEmailVerificationToken(null); // 인증 후 토큰 삭제
-            userRepository.save(user);
-            return "이메일 인증 성공. 이제 회원가입을 완료할 수 있습니다.";
+    // 이메일 인증 체크
+    public String verifyEmail(String encryptedEmail, String token) {
+        Optional<User> userOptional = userRepository.findByEmail(encryptedEmail);
+        if (userOptional.isPresent()) {
+            User user = userOptional.get();
+            if (token.equals(user.getEmailVerificationToken())) {
+                user.setEmailVerified(true);
+                user.setEmailVerificationToken(null); // 인증 후 토큰 삭제
+                userRepository.save(user);
+                return "이메일 인증 성공. 이제 회원가입을 완료할 수 있습니다.";
+            } else {
+                return "유효하지 않은 인증 토큰입니다.";
+            }
         } else {
-            return "유효하지 않은 인증 토큰입니다.";
+            return "가입된 사용자가 없습니다.";
         }
-    } else {
-        return "가입된 사용자가 없습니다.";
     }
-}
+
+    public void changePassword(String username, String oldPassword, String newPassword) {
+        Optional<User> userOptional = userRepository.findByUsername(username);
+        if (userOptional.isPresent()) {
+            User user = userOptional.get();
+
+            // 기존 비밀번호 확인
+            if (!passwordEncoder.matches(oldPassword, user.getPassword())) {
+                throw new IllegalArgumentException("기존 비밀번호가 올바르지 않습니다.");
+            }
+
+            // 새로운 비밀번호 설정
+            user.setPassword(passwordEncoder.encode(newPassword));
+            userRepository.save(user);
+
+            // 모든 기기에서 로그아웃 처리
+            jwtUtilWithRedis.invalidateUserTokens(username);
+            System.out.println(username + "님 로그아웃 처리한다 !!");
+
+
+        } else {
+            throw new UsernameNotFoundException("사용자를 찾을 수 없습니다.");
+        }
+    }
+
+    // 이메일 전송
     private void sendEmail(String to, String subject, String text) {
         SimpleMailMessage message = new SimpleMailMessage();
         message.setTo(to);

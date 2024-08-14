@@ -1,7 +1,6 @@
 package com.demo.myshop.jwt;
 
 
-
 import com.demo.myshop.dto.LoginRequestDto;
 import com.demo.myshop.model.UserRoleEnum;
 import com.demo.myshop.security.UserDetailsImpl;
@@ -55,6 +54,7 @@ public class JwtAuthenticationFilter extends UsernamePasswordAuthenticationFilte
         String token = jwtUtilWithRedis.createToken(username, role);
         jwtUtilWithRedis.addJwtToCookie(token, response);
     }
+
 
     @Override
     protected void unsuccessfulAuthentication(HttpServletRequest request, HttpServletResponse response, AuthenticationException failed) throws IOException, ServletException {

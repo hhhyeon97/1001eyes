@@ -37,7 +37,7 @@ public class JwtAuthorizationFilter extends OncePerRequestFilter {
         if (StringUtils.hasText(tokenValue)) {
             try {
                 // JWT 토큰 substring
-                tokenValue = jwtUtilWithRedis.substringToken(tokenValue, req, res); // 수정된 부분
+                tokenValue = jwtUtilWithRedis.substringToken(tokenValue, req, res);
                 log.info("Token: {}", tokenValue);
 
                 if (!jwtUtilWithRedis.validateToken(tokenValue)) {
@@ -64,7 +64,7 @@ public class JwtAuthorizationFilter extends OncePerRequestFilter {
     }
 
     // 쿠키 제거 메서드
-    private void removeJwtCookie(HttpServletResponse res) {
+    public void removeJwtCookie(HttpServletResponse res) {
         Cookie cookie = new Cookie(JwtUtilWithRedis.AUTHORIZATION_HEADER, null);
         cookie.setPath("/");
         cookie.setMaxAge(0); // 쿠키를 즉시 만료

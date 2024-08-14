@@ -2,6 +2,7 @@ package com.demo.myshop.security;
 
 import com.demo.myshop.jwt.JwtUtil;
 import com.demo.myshop.jwt.JwtUtilWithRedis;
+import jakarta.servlet.http.Cookie;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.security.web.authentication.logout.LogoutSuccessHandler;
@@ -9,12 +10,15 @@ import org.springframework.security.core.Authentication;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import org.springframework.stereotype.Component;
 
 import java.io.IOException;
 
+@Component
 public class CustomLogoutSuccessHandler implements LogoutSuccessHandler {
 
     private static final Logger logger = LoggerFactory.getLogger(CustomLogoutSuccessHandler.class);
+
     private final JwtUtilWithRedis jwtUtilWithRedis;
 
     public CustomLogoutSuccessHandler(JwtUtilWithRedis jwtUtilWithRedis) {
@@ -22,21 +26,13 @@ public class CustomLogoutSuccessHandler implements LogoutSuccessHandler {
     }
 
     @Override
-    public void onLogoutSuccess(HttpServletRequest request, HttpServletResponse response, Authentication authentication)
-            throws IOException, ServletException {
-        String token = jwtUtilWithRedis.getTokenFromRequest(request);
-//        if (token != null) {
-//            try {
-//                // substringToken 호출
-//                token = jwtUtilWithRedis.substringToken(token, request, response);
-//                jwtUtilWithRedis.removeTokenFromRedis(token);
-//            } catch (Exception e) {
-//                logger.error("로그아웃 중 오류 발생: {}", e.getMessage());
-//            }
-//        }
+    public void onLogoutSuccess(HttpServletRequest request, HttpServletResponse response, Authentication authentication) throws IOException {
+        if (authentication != null && authentication.getPrincipal() instanceof UserDetailsImpl) {
+            String username = ((UserDetailsImpl) authentication.getPrincipal()).getUsername();
+            jwtUtilWithRedis.invalidateUserTokens(username);
+            logger.info("레디스에서 토큰 제거 !!! ", username);
+        }
         logger.info("로그아웃 성공");
-
         response.setStatus(HttpServletResponse.SC_OK);
-        response.sendRedirect("/"); // 로그아웃 후 메인 페이지로 리디렉션
     }
 }
