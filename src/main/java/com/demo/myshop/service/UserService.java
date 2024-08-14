@@ -5,9 +5,11 @@ import com.demo.myshop.core.EncryptionUtils;
 import com.demo.myshop.dto.RegisterRequestDto;
 import com.demo.myshop.jwt.JwtUtilWithRedis;
 import com.demo.myshop.model.Address;
+import com.demo.myshop.model.Cart;
 import com.demo.myshop.model.User;
 import com.demo.myshop.model.UserRoleEnum;
 import com.demo.myshop.repository.AddressRepository;
+import com.demo.myshop.repository.CartRepository;
 import com.demo.myshop.repository.UserRepository;
 import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.mail.SimpleMailMessage;
@@ -27,13 +29,16 @@ public class UserService {
     private final JavaMailSender mailSender;
     private final AddressRepository addressRepository;
     private final JwtUtilWithRedis jwtUtilWithRedis;
+    private final CartRepository cartRepository;
 
-    public UserService(UserRepository userRepository, PasswordEncoder passwordEncoder, JavaMailSender mailSender, AddressRepository addressRepository, JwtUtilWithRedis jwtUtilWithRedis) {
+    public UserService(UserRepository userRepository, PasswordEncoder passwordEncoder, JavaMailSender mailSender, AddressRepository addressRepository, JwtUtilWithRedis jwtUtilWithRedis
+    , CartRepository cartRepository) {
         this.userRepository = userRepository;
         this.passwordEncoder = passwordEncoder;
         this.mailSender = mailSender;
         this.addressRepository = addressRepository;
         this.jwtUtilWithRedis = jwtUtilWithRedis;
+        this.cartRepository = cartRepository;
     }
     // ADMIN_TOKEN
     private final String ADMIN_TOKEN = "AAABnvxRVklrnYxKZ0aHgTBcXukeZygoC";
@@ -92,6 +97,11 @@ public class UserService {
         User user = new User(username, password, encryptedEmail, encryptedPhone, encryptedName, role, false, verificationToken); // 토큰 생성 및 저장
         userRepository.save(user);
 
+        // 장바구니 생성
+        Cart cart = new Cart();
+        cart.setUser(user);
+        cartRepository.save(cart);
+        System.out.println("user.getUsername() = " + user.getUsername());
 
         // 주소 등록
         Address address = new Address(encryptedAddress, encryptedAddressDetail, encryptedZipcode,

@@ -1,7 +1,11 @@
 package com.demo.myshop.controller;
 
+import com.demo.myshop.model.Cart;
+import com.demo.myshop.model.CartItem;
 import com.demo.myshop.service.CartService;
 import org.springframework.web.bind.annotation.*;
+
+import java.util.List;
 
 @RestController
 @RequestMapping("/api/cart")
@@ -12,8 +16,5 @@ public class CartController {
     public CartController(CartService cartService) {
         this.cartService = cartService;
     }
-    @PostMapping("/add")
-    public void addItemToCart(@RequestParam Long productId, @RequestParam int quantity) {
-        cartService.addItemToCart(productId, quantity);
-    }
+
 }
