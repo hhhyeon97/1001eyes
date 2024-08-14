@@ -6,6 +6,7 @@ import com.demo.myshop.dto.RegisterRequestDto;
 import com.demo.myshop.jwt.JwtUtilWithRedis;
 import com.demo.myshop.repository.UserRepository;
 import com.demo.myshop.service.UserService;
+import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -47,9 +48,9 @@ public class UserController {
     }
 
     @PostMapping("/change-password")
-    public ResponseEntity<ApiUtils.ApiResult<String>> changePassword(@RequestBody ChangePasswordRequestDto requestDto) {
+    public ResponseEntity<ApiUtils.ApiResult<String>> changePassword(@RequestBody ChangePasswordRequestDto requestDto, HttpServletResponse httpServletResponse) {
         try {
-            userService.changePassword(requestDto.getUsername(), requestDto.getOldPassword(), requestDto.getNewPassword());
+            userService.changePassword(requestDto.getUsername(), requestDto.getOldPassword(), requestDto.getNewPassword(), httpServletResponse);
             return ResponseEntity.ok(ApiUtils.success("비밀번호 변경이 완료되었습니다."));
         } catch (Exception e) {
             return ResponseEntity.badRequest().body(ApiUtils.error(e.getMessage()));

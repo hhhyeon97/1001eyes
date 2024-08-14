@@ -112,16 +112,19 @@ public class JwtUtilWithRedis {
         return Jwts.parserBuilder().setSigningKey(key).build().parseClaimsJws(token).getBody();
     }
 
-    public void invalidateUserTokens(String username) {
+    public void removeJwtCookie(HttpServletResponse response) {
+        Cookie cookie = new Cookie(AUTHORIZATION_HEADER, null);
+        cookie.setPath("/");
+        cookie.setHttpOnly(true);  // 클라이언트 측에서 접근 불가
+        cookie.setSecure(true);    // HTTPS에서만 전송
+        cookie.setMaxAge(0);       // 즉시 만료
+        response.addCookie(cookie);
+    }
+    public void invalidateUserTokens(String username, HttpServletResponse response) {
         // 사용자 관련 모든 토큰 삭제
         redisTemplate.delete("user:" + username + ":token");
         log.info("레디스에서 토큰 제거!");
+        // 클라이언트 쿠키 제거
+        removeJwtCookie(response);
     }
-//    // 쿠키 제거 메서드
-//    public void removeJwtCookie(HttpServletResponse res) {
-//        Cookie cookie = new Cookie(JwtUtilWithRedis.AUTHORIZATION_HEADER, null);
-//        cookie.setPath("/");
-//        cookie.setMaxAge(0); // 쿠키를 즉시 만료
-//        res.addCookie(cookie);
-//    }
 }

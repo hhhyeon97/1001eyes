@@ -9,6 +9,7 @@ import com.demo.myshop.model.User;
 import com.demo.myshop.model.UserRoleEnum;
 import com.demo.myshop.repository.AddressRepository;
 import com.demo.myshop.repository.UserRepository;
+import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.mail.SimpleMailMessage;
 import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
@@ -125,7 +126,7 @@ public class UserService {
         }
     }
 
-    public void changePassword(String username, String oldPassword, String newPassword) {
+    public void changePassword(String username, String oldPassword, String newPassword, HttpServletResponse response) {
         Optional<User> userOptional = userRepository.findByUsername(username);
         if (userOptional.isPresent()) {
             User user = userOptional.get();
@@ -140,9 +141,8 @@ public class UserService {
             userRepository.save(user);
 
             // 모든 기기에서 로그아웃 처리
-            jwtUtilWithRedis.invalidateUserTokens(username);
+            jwtUtilWithRedis.invalidateUserTokens(username, response);
             System.out.println(username + "님 로그아웃 처리한다 !!");
-
 
         } else {
             throw new UsernameNotFoundException("사용자를 찾을 수 없습니다.");
