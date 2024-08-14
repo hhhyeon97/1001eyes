@@ -35,7 +35,6 @@ public class UserService {
         this.addressRepository = addressRepository;
         this.jwtUtilWithRedis = jwtUtilWithRedis;
     }
-
     // ADMIN_TOKEN
     private final String ADMIN_TOKEN = "AAABnvxRVklrnYxKZ0aHgTBcXukeZygoC";
 
@@ -140,7 +139,7 @@ public class UserService {
             user.setPassword(passwordEncoder.encode(newPassword));
             userRepository.save(user);
 
-            // 모든 기기에서 로그아웃 처리
+            // 레디스 토큰 제거 -> 모든 기기에서 로그아웃 처리 ?! 는 아닌 듯 ?!
             jwtUtilWithRedis.invalidateUserTokens(username, response);
             System.out.println(username + "님 로그아웃 처리한다 !!");
 
@@ -158,4 +157,8 @@ public class UserService {
         mailSender.send(message);
     }
 
+    public User findByUsername(String username) {
+        Optional<User> userOptional = userRepository.findByUsername(username);
+        return userOptional.orElse(null); // 사용자가 없으면 null 반환
+    }
 }

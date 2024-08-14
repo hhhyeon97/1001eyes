@@ -2,11 +2,7 @@ package com.demo.myshop.controller;
 
 
 import com.demo.myshop.model.Product;
-import com.demo.myshop.model.User;
-import com.demo.myshop.security.UserDetailsImpl;
 import com.demo.myshop.service.ProductService;
-import lombok.RequiredArgsConstructor;
-import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
@@ -22,11 +18,11 @@ public class ProductController {
     public ProductController(ProductService productService) {
         this.productService = productService;
     }
-
-    // 상품 등록 폼
-    @GetMapping("/add-form")
-    public String productForm() {return "create";
-    }
+//
+//    // 상품 등록 폼
+//    @GetMapping("/add-form")
+//    public String productForm() {return "create";
+//    }
     // 상품 등록
     @PostMapping("/add")
     public String addProduct(@RequestParam String title, @RequestParam String description,

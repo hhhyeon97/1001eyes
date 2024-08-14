@@ -1,6 +1,8 @@
 package com.demo.myshop.security;
 
 import com.demo.myshop.jwt.JwtUtilWithRedis;
+import jakarta.servlet.ServletException;
+import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import org.slf4j.Logger;
@@ -23,21 +25,22 @@ public class CustomLogoutSuccessHandler implements LogoutSuccessHandler {
     }
 
     @Override
-    public void onLogoutSuccess(HttpServletRequest request, HttpServletResponse response, Authentication authentication) throws IOException {
-        if (authentication == null) {
-            logger.warn("Authentication object is null during logout.");
-        } else {
-            logger.info("Authentication Principal Type 체크 !!! : {}", authentication.getPrincipal().getClass().getName());
-            if (authentication.getPrincipal() instanceof UserDetailsImpl) {
-                String username = ((UserDetailsImpl) authentication.getPrincipal()).getUsername();
-                logger.info("로그아웃 시도 유저 이름: {}", username);
-                jwtUtilWithRedis.invalidateUserTokens(username, response);
-                logger.info("레디스에서 토큰 제거 !!!");
-            } else {
-                logger.warn("Unexpected principal type: {}", authentication.getPrincipal().getClass().getName());
-            }
-        }
+    public void onLogoutSuccess(HttpServletRequest request, HttpServletResponse response, Authentication authentication)
+            throws IOException, ServletException {
+        String token = jwtUtilWithRedis.getTokenFromRequest(request);
+        System.out.println("token = " + token);
+//        if (token != null) {
+//            try {
+//                // substringToken 호출
+//                token = jwtUtilWithRedis.substringToken(token, request, response);
+//                jwtUtilWithRedis.removeTokenFromRedis(token);
+//            } catch (Exception e) {
+//                logger.error("로그아웃 중 오류 발생: {}", e.getMessage());
+//            }
+//        }
         logger.info("로그아웃 성공");
+
         response.setStatus(HttpServletResponse.SC_OK);
+        response.sendRedirect("/"); // 로그아웃 후 메인 페이지로 리디렉션
     }
 }
