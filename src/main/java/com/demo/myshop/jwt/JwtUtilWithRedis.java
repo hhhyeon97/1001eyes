@@ -1,16 +1,16 @@
 package com.demo.myshop.jwt;
 
 import com.demo.myshop.model.UserRoleEnum;
-import io.jsonwebtoken.*;
+import io.jsonwebtoken.Claims;
+import io.jsonwebtoken.Jwts;
+import io.jsonwebtoken.SignatureAlgorithm;
 import io.jsonwebtoken.security.Keys;
-import io.jsonwebtoken.security.SignatureException;
 import jakarta.annotation.PostConstruct;
 import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.extern.slf4j.Slf4j;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Component;
@@ -24,7 +24,7 @@ import java.util.Base64;
 import java.util.Date;
 import java.util.concurrent.TimeUnit;
 
-@Slf4j(topic = "jwt-util-!!!")
+@Slf4j(topic = "jwt-util-with-redis!")
 @Component
 public class JwtUtilWithRedis {
 
@@ -36,6 +36,9 @@ public class JwtUtilWithRedis {
     private String secretKey;
     private Key key;
 
+    @Autowired
+    private RedisTemplate<String, Object> redisTemplate;
+
     @PostConstruct
     public void init() {
         byte[] bytes = Base64.getDecoder().decode(secretKey);
@@ -44,7 +47,7 @@ public class JwtUtilWithRedis {
 
     public String createToken(String username, UserRoleEnum role) {
         Date date = new Date();
-        return BEARER_PREFIX +
+        String token = BEARER_PREFIX +
                 Jwts.builder()
                         .setSubject(username)
                         .claim("auth", role)
@@ -52,6 +55,11 @@ public class JwtUtilWithRedis {
                         .setIssuedAt(date)
                         .signWith(key, SignatureAlgorithm.HS256)
                         .compact();
+
+        // Redis에 토큰 저장
+        redisTemplate.opsForValue().set("user:" + username + ":token", token, TOKEN_TIME, TimeUnit.MILLISECONDS);
+
+        return token;
     }
 
     public void addJwtToCookie(String token, HttpServletResponse res) {
@@ -89,6 +97,7 @@ public class JwtUtilWithRedis {
         throw new NullPointerException("Not Found Token");
     }
 
+
     public boolean validateToken(String token) {
         try {
             Jwts.parserBuilder().setSigningKey(key).build().parseClaimsJws(token);
@@ -101,5 +110,21 @@ public class JwtUtilWithRedis {
 
     public Claims getUserInfoFromToken(String token) {
         return Jwts.parserBuilder().setSigningKey(key).build().parseClaimsJws(token).getBody();
+    }
+
+    public void removeJwtCookie(HttpServletResponse response) {
+        Cookie cookie = new Cookie(AUTHORIZATION_HEADER, null);
+        cookie.setPath("/");
+        cookie.setHttpOnly(true);  // 클라이언트 측에서 접근 불가
+        cookie.setSecure(true);    // HTTPS에서만 전송
+        cookie.setMaxAge(0);       // 즉시 만료
+        response.addCookie(cookie);
+    }
+    public void invalidateUserTokens(String username, HttpServletResponse response) {
+        // 사용자 관련 모든 토큰 삭제
+        redisTemplate.delete("user:" + username + ":token");
+        log.info("레디스에서 토큰 제거!");
+        // 클라이언트 쿠키 제거
+        removeJwtCookie(response);
     }
 }

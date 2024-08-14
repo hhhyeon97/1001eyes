@@ -1,19 +1,15 @@
 package com.demo.myshop.controller;
 
 import com.demo.myshop.core.ApiUtils;
-import com.demo.myshop.dto.LoginRequestDto;
+import com.demo.myshop.dto.ChangePasswordRequestDto;
 import com.demo.myshop.dto.RegisterRequestDto;
 import com.demo.myshop.jwt.JwtUtilWithRedis;
 import com.demo.myshop.repository.UserRepository;
 import com.demo.myshop.service.UserService;
+import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
-
-import jakarta.servlet.http.HttpServletRequest;
-
-import java.util.HashMap;
-import java.util.Map;
 
 @RestController
 @RequestMapping("/api/user")
@@ -39,35 +35,6 @@ public class UserController {
         }
     }
 
-    // 로그인
-    @PostMapping("/login")
-    public ResponseEntity<ApiUtils.ApiResult<String>> login(@RequestBody LoginRequestDto loginRequestDto) {
-        // 로그인 로직 구현
-        // 예: 인증 성공 시 JWT 토큰 발급
-        // 현재는 예시로 성공 메시지 반환
-        return ResponseEntity.ok(ApiUtils.success("로그인 성공"));
-    }
-
-    // 인증 상태 체크
-    @GetMapping("/check-auth")
-    public ResponseEntity<Map<String, Boolean>> checkAuth(HttpServletRequest req) {
-        String token = jwtUtilWithRedis.getTokenFromRequest(req);
-        boolean isAuthenticated = token != null && jwtUtilWithRedis.validateToken(token);
-        Map<String, Boolean> response = new HashMap<>();
-        response.put("isAuthenticated", isAuthenticated);
-        return ResponseEntity.ok(response);
-    }
-
-    // 이메일 인증 토큰 전송
-    @GetMapping("/send")
-    public ResponseEntity<ApiUtils.ApiResult<String>> sendEmail(@RequestParam String email) {
-        String result = userService.handleEmailVerification(email);
-        if (result.contains("이미 가입된 유저입니다.")) {
-            return ResponseEntity.badRequest().body(ApiUtils.error(result));
-        } else {
-            return ResponseEntity.ok(ApiUtils.success(result));
-        }
-    }
     @PostMapping("/verify")
     public ResponseEntity<String> verifyEmail(@RequestParam String email, @RequestParam String token) {
         try {
@@ -77,6 +44,16 @@ public class UserController {
         } catch (RuntimeException e) {
             // 에러 처리
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(e.getMessage());
+        }
+    }
+
+    @PostMapping("/change-password")
+    public ResponseEntity<ApiUtils.ApiResult<String>> changePassword(@RequestBody ChangePasswordRequestDto requestDto, HttpServletResponse httpServletResponse) {
+        try {
+            userService.changePassword(requestDto.getUsername(), requestDto.getOldPassword(), requestDto.getNewPassword(), httpServletResponse);
+            return ResponseEntity.ok(ApiUtils.success("비밀번호 변경이 완료되었습니다."));
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(ApiUtils.error(e.getMessage()));
         }
     }
 
