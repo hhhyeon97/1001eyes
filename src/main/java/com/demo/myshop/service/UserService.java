@@ -102,7 +102,6 @@ public class UserService {
         Cart cart = new Cart();
         cart.setUser(user);
         cartRepository.save(cart);
-        System.out.println("user.getUsername() = " + user.getUsername());
 
         // 주소 등록
         Address address = new Address(encryptedAddress, encryptedAddressDetail, encryptedZipcode,

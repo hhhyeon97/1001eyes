@@ -3,11 +3,10 @@ package com.demo.myshop.dto;
 import lombok.Getter;
 import lombok.Setter;
 
-@Setter
 @Getter
-public class CartItemRequestDto {
-
+@Setter
+public class CartItemDto {
+    private Long id;
     private Long productId;
     private Integer quantity;
-
 }
