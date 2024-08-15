@@ -34,6 +34,8 @@ public class Order {
     private LocalDateTime deliveryDate;
     private LocalDateTime returnRequestDate;
 
+    private Integer totalPrice;
+
     // 주문 상태 업데이트 메서드
     public void updateStatus(OrderStatus newStatus) {
         this.status = newStatus;
