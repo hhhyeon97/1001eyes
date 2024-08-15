@@ -100,7 +100,7 @@ public class UserService {
 
         // 장바구니 생성
         Cart cart = new Cart();
-        cart.setUser(user);
+        cart.setUserId(user.getId());
         cartRepository.save(cart);
         System.out.println("user.getUsername() = " + user.getUsername());
 
