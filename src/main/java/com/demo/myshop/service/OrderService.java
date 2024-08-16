@@ -77,6 +77,7 @@ public class OrderService {
         orderRepository.save(order);
     }
 
+    // 반품 요청
     public void requestReturn(Long orderId) {
         Order order = orderRepository.findById(orderId)
                 .orElseThrow(() -> new RuntimeException("Order not found"));
@@ -86,31 +87,14 @@ public class OrderService {
         }
 
         LocalDateTime requestDate = LocalDateTime.now();
-        if (requestDate.isAfter(order.getDeliveryDate().plusDays(1))) {
+        if (requestDate.isAfter(order.getDeliveryDate().plusMinutes(5))) {
             throw new RuntimeException("Return period expired");
         }
 
         order.setReturnRequestDate(requestDate);
         order.updateStatus(OrderStatus.RETURN_REQUESTED);
 
-        for (OrderItem item : order.getItems()) {
-            Product product = item.getProduct();
-            product.setStock(product.getStock() + item.getQuantity());
-            productRepository.save(product);
-        }
-
-        orderRepository.save(order);
-    }
-
-    public void completeReturn(Long orderId) {
-        Order order = orderRepository.findById(orderId)
-                .orElseThrow(() -> new RuntimeException("Order not found"));
-
-        if (order.getStatus() != OrderStatus.RETURN_REQUESTED) {
-            throw new RuntimeException("Order return request not found");
-        }
-
-        order.updateStatus(OrderStatus.RETURNED);
+        // 재고 변경은 스케줄러에서 처리하므로 여기서는 제외
         orderRepository.save(order);
     }
 
