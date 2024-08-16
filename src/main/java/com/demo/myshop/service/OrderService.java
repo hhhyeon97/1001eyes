@@ -1,5 +1,6 @@
 package com.demo.myshop.service;
 
+import com.demo.myshop.dto.OrderDto;
 import com.demo.myshop.dto.OrderItemDto;
 import com.demo.myshop.model.*;
 import com.demo.myshop.repository.OrderRepository;
@@ -10,6 +11,7 @@ import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.stream.Collectors;
 
 @Service
 public class OrderService {
@@ -27,9 +29,32 @@ public class OrderService {
         this.userRepository = userRepository;
     }
 
-    public List<Order> getOrdersByUser(Long userId) {
-        return orderRepository.findByUserId(userId);
-    }
+//    public List<Order> getOrdersByUser(Long userId) {
+//        return orderRepository.findByUserId(userId);
+//    }
+    public List<OrderDto> getOrdersByUserAsDto(Long userId) {
+    List<Order> orders = orderRepository.findByUserId(userId);
+
+    return orders.stream().map(order -> {
+        OrderDto orderDto = new OrderDto();
+        orderDto.setId(order.getId());
+        orderDto.setOrderDate(order.getOrderDate());
+        orderDto.setDeliveryDate(order.getDeliveryDate());
+        orderDto.setTotalPrice(order.getTotalPrice());
+
+        List<OrderItemDto> items = order.getItems().stream().map(item -> {
+            OrderItemDto itemDto = new OrderItemDto();
+            itemDto.setProductId(item.getProduct().getId());
+            itemDto.setProductName(item.getProduct().getTitle());
+            itemDto.setQuantity(item.getQuantity());
+            itemDto.setPrice(item.getPrice());
+            return itemDto;
+        }).collect(Collectors.toList());
+
+        orderDto.setItems(items);
+        return orderDto;
+    }).collect(Collectors.toList());
+}
 
     public void cancelOrder(Long orderId) {
         Order order = orderRepository.findById(orderId)
@@ -98,6 +123,9 @@ public class OrderService {
         order.setStatus(OrderStatus.PENDING);
         order.setOrderDate(LocalDateTime.now());
 
+        // 주문 먼저 저장
+        orderRepository.save(order);
+
         // 총 가격 계산
         int totalPrice = 0;
 
@@ -116,26 +144,23 @@ public class OrderService {
             item.setProduct(product);
             item.setQuantity(dto.getQuantity());
             item.setPrice(product.getPrice());
-            item.setOrder(order);
+            item.setOrder(order); // 여기서 이미 저장된 Order 객체를 사용
 
             // 총 가격 업데이트
             totalPrice += product.getPrice() * dto.getQuantity();
-
-            // Order에 아이템 추가
-            order.getItems().add(item);
 
             // 제품 재고 감소
             product.setStock(product.getStock() - dto.getQuantity());
             productRepository.save(product);
 
             // OrderItem 저장
-            orderItemRepository.save(item);
+            orderItemRepository.save(item);  // 이제 item을 저장할 때, order는 이미 저장된 상태
         }
 
         // 총 가격 설정
         order.setTotalPrice(totalPrice);
 
-        // 주문 저장
+        // 주문 다시 저장 (필요시)
         orderRepository.save(order);
 
         return order;

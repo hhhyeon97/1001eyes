@@ -9,5 +9,8 @@ import lombok.Setter;
 public class OrderItemDto {
     private Long productId;
     private Integer quantity;
+
+    private String productName;
+    private Integer price;
 }
 

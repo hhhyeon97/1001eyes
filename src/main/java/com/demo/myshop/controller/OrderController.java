@@ -1,6 +1,7 @@
 package com.demo.myshop.controller;
 
 import com.demo.myshop.dto.CreateOrderDto;
+import com.demo.myshop.dto.OrderDto;
 import com.demo.myshop.model.Order;
 import com.demo.myshop.security.UserDetailsImpl;
 import com.demo.myshop.service.OrderService;
@@ -20,10 +21,16 @@ public class OrderController {
         this.orderService = orderService;
     }
 
+    //    @GetMapping
+//    public ResponseEntity<List<Order>> getOrders(@AuthenticationPrincipal UserDetailsImpl userDetails) {
+//        Long userId = userDetails.getUser().getId();
+//        List<Order> orders = orderService.getOrdersByUser(userId);
+//        return ResponseEntity.ok(orders);
+//    }
     @GetMapping
-    public ResponseEntity<List<Order>> getOrders(@AuthenticationPrincipal UserDetailsImpl userDetails) {
+    public ResponseEntity<List<OrderDto>> getOrders(@AuthenticationPrincipal UserDetailsImpl userDetails) {
         Long userId = userDetails.getUser().getId();
-        List<Order> orders = orderService.getOrdersByUser(userId);
+        List<OrderDto> orders = orderService.getOrdersByUserAsDto(userId);
         return ResponseEntity.ok(orders);
     }
 
