@@ -48,16 +48,6 @@ public class OrderController {
         }
     }
 
-    @PostMapping("/return/complete")
-    public ResponseEntity<String> completeReturn(@RequestParam Long orderId) {
-        try {
-            orderService.completeReturn(orderId);
-            return ResponseEntity.ok("Return completed successfully");
-        } catch (Exception e) {
-            return ResponseEntity.badRequest().body(e.getMessage());
-        }
-    }
-
     @PostMapping("/create")
     public ResponseEntity<String> createOrder(@AuthenticationPrincipal UserDetailsImpl userDetails,
                                               @RequestBody CreateOrderDto createOrderDto) {
