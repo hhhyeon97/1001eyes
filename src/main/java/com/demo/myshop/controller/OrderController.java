@@ -21,12 +21,6 @@ public class OrderController {
         this.orderService = orderService;
     }
 
-    //    @GetMapping
-//    public ResponseEntity<List<Order>> getOrders(@AuthenticationPrincipal UserDetailsImpl userDetails) {
-//        Long userId = userDetails.getUser().getId();
-//        List<Order> orders = orderService.getOrdersByUser(userId);
-//        return ResponseEntity.ok(orders);
-//    }
     @GetMapping
     public ResponseEntity<List<OrderDto>> getOrders(@AuthenticationPrincipal UserDetailsImpl userDetails) {
         Long userId = userDetails.getUser().getId();

@@ -30,47 +30,50 @@ public class OrderService {
     }
 
     public List<OrderDto> getOrdersByUserAsDto(Long userId) {
-    List<Order> orders = orderRepository.findByUserId(userId);
+        List<Order> orders = orderRepository.findByUserId(userId);
 
-    return orders.stream().map(order -> {
-        OrderDto orderDto = new OrderDto();
-        orderDto.setId(order.getId());
-        orderDto.setOrderDate(order.getOrderDate());
-        orderDto.setDeliveryDate(order.getDeliveryDate());
-        orderDto.setTotalPrice(order.getTotalPrice());
-        orderDto.setStatus(order.getStatus());
+        return orders.stream().map(order -> {
+            OrderDto orderDto = new OrderDto();
+            orderDto.setId(order.getId());
+            orderDto.setOrderDate(order.getOrderDate());
+            orderDto.setDeliveryDate(order.getDeliveryDate());
+            orderDto.setTotalPrice(order.getTotalPrice());
+            orderDto.setStatus(order.getStatus());
 
-        // OrderItemDto 변환 및 설정
-        List<OrderItemDto> items = order.getItems().stream().map(item -> {
-            OrderItemDto itemDto = new OrderItemDto();
-            itemDto.setProductId(item.getProduct().getId());
-            itemDto.setProductName(item.getProduct().getTitle());
-            itemDto.setQuantity(item.getQuantity());
-            itemDto.setPrice(item.getPrice());
-            return itemDto;
+            // OrderItemDto 변환 및 설정
+            List<OrderItemDto> items = order.getItems().stream().map(item -> {
+                OrderItemDto itemDto = new OrderItemDto();
+                itemDto.setProductId(item.getProduct().getId());
+                itemDto.setProductName(item.getProduct().getTitle());
+                itemDto.setQuantity(item.getQuantity());
+                itemDto.setPrice(item.getPrice());
+                return itemDto;
+            }).collect(Collectors.toList());
+
+            orderDto.setItems(items);
+            return orderDto;
         }).collect(Collectors.toList());
+    }
 
-        orderDto.setItems(items);
-        return orderDto;
-    }).collect(Collectors.toList());
-}
-
+    // 주문 취소 메서드
     public void cancelOrder(Long orderId) {
         Order order = orderRepository.findById(orderId)
                 .orElseThrow(() -> new RuntimeException("Order not found"));
 
-        if (order.getStatus() == OrderStatus.DELIVERED || order.getStatus() == OrderStatus.CANCELED) {
-            throw new RuntimeException("Order cannot be canceled");
+        // 상태가 '배송중' 이상인 경우 취소 불가
+        if (order.getStatus() != OrderStatus.PENDING) {
+            throw new RuntimeException("Order cannot be canceled as it is already being shipped or delivered");
         }
 
-        order.updateStatus(OrderStatus.CANCELED);
-
+        // 재고 복구
         for (OrderItem item : order.getItems()) {
             Product product = item.getProduct();
             product.setStock(product.getStock() + item.getQuantity());
             productRepository.save(product);
         }
 
+        // 주문 상태를 '취소됨'으로 변경
+        order.setStatus(OrderStatus.CANCELED);
         orderRepository.save(order);
     }
 
