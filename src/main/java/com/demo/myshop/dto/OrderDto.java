@@ -1,5 +1,6 @@
 package com.demo.myshop.dto;
 
+import com.demo.myshop.model.OrderStatus;
 import lombok.Getter;
 import lombok.Setter;
 
@@ -13,5 +14,6 @@ public class OrderDto {
     private LocalDateTime orderDate;
     private LocalDateTime deliveryDate;
     private Integer totalPrice;
+    private OrderStatus status;
     private List<OrderItemDto> items;
 }
