@@ -10,6 +10,6 @@ import java.util.List;
 public class CartDto {
     private Long id;
     private Long userId;
-    private Double totalPrice;
+    private Integer totalPrice;
     private List<CartItemDto> items;
 }

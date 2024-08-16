@@ -60,6 +60,8 @@ public class JwtAuthenticationFilter extends UsernamePasswordAuthenticationFilte
         // 응답 메시지 작성
         String responseMessage = "{\"message\":\"로그인 성공\"}";
         response.getWriter().write(responseMessage);
+
+        System.out.println("발급한 토큰 ->" + token);
     }
 
     @Override
