@@ -17,22 +17,12 @@ public class ProductService {
         this.productRepository = productRepository;
     }
 
-//    // 상품 등록
-//    public void saveProduct(Product product) {
-//        productRepository.save(product);
-//    }
-
-// 상품 등록
-public void saveProduct(ProductRequestDto productRequestDto) {
-    Product product = new Product();
-    product.setTitle(productRequestDto.getTitle());
-    product.setDescription(productRequestDto.getDescription());
-    product.setCategory(productRequestDto.getCategory());
-    product.setPrice(productRequestDto.getPrice());
-    product.setStock(productRequestDto.getStock());
-    product.setImageUrl(productRequestDto.getImageUrl());
-    productRepository.save(product);
-}
+    // 상품 등록
+    public void saveProduct(ProductRequestDto requestDto) {
+        // DTO에서 엔티티로 변환 후 저장
+        Product product = requestDto.toProduct();
+        productRepository.save(product);
+    }
 
     // 상품 리스트 조회
     public List<Product> getAllProducts() {

@@ -2,15 +2,15 @@ package com.demo.myshop.model;
 
 
 import jakarta.persistence.*;
-import lombok.Getter;
-import lombok.Setter;
+import lombok.*;
 import org.hibernate.annotations.CreationTimestamp;
 
 import java.time.LocalDateTime;
 
 @Entity
-@Getter
 @Setter
+@Getter
+@NoArgsConstructor
 @Table(name = "products")
 public class Product {
 
@@ -35,5 +35,14 @@ public class Product {
 
     @CreationTimestamp
     private LocalDateTime created_at;
+
+    public Product(String title, String description, String category, Integer price, Integer stock, String imageUrl) {
+    this.title = title;
+    this.description = description;
+    this.category = category;
+    this.price = price;
+    this.stock = stock;
+    this.imageUrl = imageUrl;
+    }
 
 }

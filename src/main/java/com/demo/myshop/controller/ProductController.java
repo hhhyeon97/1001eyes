@@ -8,7 +8,6 @@ import com.demo.myshop.model.Product;
 import com.demo.myshop.service.ProductService;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Controller;
-import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -25,7 +24,7 @@ public class ProductController {
         this.productService = productService;
     }
 
-    // 상품 등록 // todo : 상품 등록 예외처리 추가 (중복 상품명, 가격 최소 설정 등 -> dto에서 유효성 어노테이션으로 설정 ?!)
+    // 상품 등록
     @PostMapping
     public ResponseEntity<ApiUtils.ApiResult<String>> addProduct(@RequestBody ProductRequestDto productRequestDto) {
         productService.saveProduct(productRequestDto);

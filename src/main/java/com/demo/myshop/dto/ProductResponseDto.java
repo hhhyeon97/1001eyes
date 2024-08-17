@@ -5,13 +5,13 @@ import lombok.Getter;
 
 @Getter
 public class ProductResponseDto {
-    private Long id;
-    private String title;
-    private String description;
-    private String category;
-    private Integer price;
-    private Integer stock;
-    private String imageUrl;
+    private final Long id;
+    private final String title;
+    private final String description;
+    private final String category;
+    private final Integer price;
+    private final Integer stock;
+    private final String imageUrl;
 
     // Product 엔티티를 DTO로 변환하는 생성자
     public ProductResponseDto(Product product) {
