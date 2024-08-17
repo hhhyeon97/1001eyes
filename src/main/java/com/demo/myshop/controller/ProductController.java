@@ -10,7 +10,7 @@ import org.springframework.web.bind.annotation.*;
 import java.util.Optional;
 
 @Controller
-@RequestMapping("/api/product")
+@RequestMapping("/api/products")
 public class ProductController {
 
     private final ProductService productService;
@@ -18,13 +18,9 @@ public class ProductController {
     public ProductController(ProductService productService) {
         this.productService = productService;
     }
-//
-//    // 상품 등록 폼
-//    @GetMapping("/add-form")
-//    public String productForm() {return "create";
-//    }
+
     // 상품 등록
-    @PostMapping("/add")
+    @PostMapping
     public String addProduct(@RequestParam String title, @RequestParam String description,
                              @RequestParam String category, @RequestParam Integer price,
                              @RequestParam Integer stock, @RequestParam String imageUrl ) {
@@ -40,7 +36,7 @@ public class ProductController {
     }
 
     // 상품 리스트 조회
-    @GetMapping("/list")
+    @GetMapping
     public String productList(Model model) {
         // 모든 아이템을 조회하여 리스트 페이지로 전달
         model.addAttribute("products", productService.getAllProducts());

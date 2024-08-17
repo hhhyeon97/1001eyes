@@ -12,7 +12,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
-@RequestMapping("/api/user")
+@RequestMapping("/api/users")
 public class UserController {
 
     private final UserService userService;
@@ -43,11 +43,12 @@ public class UserController {
         }
     }
 
-    @PostMapping("/change-password")
-    public ResponseEntity<ApiUtils.ApiResult<String>> changePassword(@RequestBody ChangePasswordRequestDto requestDto, HttpServletResponse httpServletResponse) {
+    @PutMapping("/change-password")
+    public ResponseEntity<ApiUtils.ApiResult<String>> changePassword(@RequestBody ChangePasswordRequestDto requestDto,
+                                                                     HttpServletResponse httpServletResponse) {
         try {
             userService.changePassword(requestDto.getUsername(), requestDto.getOldPassword(), requestDto.getNewPassword(), httpServletResponse);
-            return ResponseEntity.ok(ApiUtils.success("비밀번호 변경이 완료되었습니다."));
+            return ResponseEntity.ok(ApiUtils.success("비밀번호가 업데이트 되었습니다. 로그인 후 이용해 주세요."));
         } catch (Exception e) {
             return ResponseEntity.badRequest().body(ApiUtils.error(e.getMessage()));
         }

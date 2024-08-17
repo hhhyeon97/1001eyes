@@ -20,27 +20,26 @@ public class Address {
     private String encryptedAddressDetail; // 암호화된 상세 주소
     private String encryptedZipcode; // 암호화된 우편 번호
 
-    private String name; // 받는 분 이름
     private boolean isDefault; // 기본 배송지 체크
-
-    private String phoneNumber; // 전화번호
-    private String message; // 배송 메세지
+    private String message=""; // 배송 메시지
 
     @ManyToOne
     @JoinColumn(name = "user_id") // 외래 키 열 이름 명시
     private User user;
 
-    // 추가 생성자
+    @OneToOne
+    @JoinColumn(name = "receiver_id")
+    private Receiver receiver; // Receiver와 1:1 관계
+
+    // 생성자
     public Address(String encryptedAddress, String encryptedAddressDetail, String encryptedZipcode,
-                   String name, boolean isDefault, String phoneNumber, String message, User user) {
+                   boolean isDefault, String message, User user, Receiver receiver) {
         this.encryptedAddress = encryptedAddress;
         this.encryptedAddressDetail = encryptedAddressDetail;
         this.encryptedZipcode = encryptedZipcode;
-        this.name = name;
         this.isDefault = isDefault;
-        this.phoneNumber = phoneNumber;
         this.message = message;
         this.user = user;
+        this.receiver = receiver;
     }
-
 }

@@ -20,7 +20,7 @@ public class Order {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @ManyToOne  // 수정: OneToOne -> ManyToOne
+    @ManyToOne
     @JoinColumn(name = "user_id")
     private User user;
 

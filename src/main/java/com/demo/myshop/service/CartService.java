@@ -25,16 +25,16 @@ public class CartService {
 
     public List<CartItem> getCartItems(Long userId) {
         Cart cart = cartRepository.findByUserId(userId)
-                .orElseThrow(() -> new RuntimeException("Cart not found"));
+                .orElseThrow(() -> new RuntimeException("장바구니 정보를 찾을 수 없습니다."));
         return List.copyOf(cart.getItems());
     }
 
     public void addItemToCart(Long userId, Long productId, Integer quantity) {
         Cart cart = cartRepository.findByUserId(userId)
-                .orElseThrow(() -> new RuntimeException("Cart not found"));
+                .orElseThrow(() -> new RuntimeException("장바구니 정보를 찾을 수 없습니다."));
 
         Product product = productRepository.findById(productId)
-                .orElseThrow(() -> new RuntimeException("Product not found"));
+                .orElseThrow(() -> new RuntimeException("해당 상품 없음"));
 
         CartItem cartItem = new CartItem();
         cartItem.setCart(cart);
@@ -50,13 +50,13 @@ public class CartService {
 
     public void removeItemFromCart(Long userId, Long cartItemId) {
         Cart cart = cartRepository.findByUserId(userId)
-                .orElseThrow(() -> new RuntimeException("Cart not found"));
+                .orElseThrow(() -> new RuntimeException("장바구니 정보를 찾을 수 없습니다."));
 
         CartItem cartItem = cartItemRepository.findById(cartItemId)
-                .orElseThrow(() -> new RuntimeException("CartItem not found"));
+                .orElseThrow(() -> new RuntimeException("장바구니 내 상품을 찾을 수 없습니다."));
 
         if (!cart.getItems().contains(cartItem)) {
-            throw new RuntimeException("CartItem does not belong to this cart");
+            throw new RuntimeException("장바구니에 속하지 않은 상품입니다.");
         }
 
         cart.getItems().remove(cartItem); // 카트에서 아이템 제거
@@ -68,13 +68,13 @@ public class CartService {
 
     public void updateCartItemQuantity(Long userId, Long cartItemId, Integer newQuantity) {
         Cart cart = cartRepository.findByUserId(userId)
-                .orElseThrow(() -> new RuntimeException("Cart not found"));
+                .orElseThrow(() -> new RuntimeException("장바구니 정보를 찾을 수 없습니다."));
 
         CartItem cartItem = cartItemRepository.findById(cartItemId)
-                .orElseThrow(() -> new RuntimeException("CartItem not found"));
+                .orElseThrow(() -> new RuntimeException("장바구니 내 상품을 찾을 수 없습니다."));
 
         if (!cart.getItems().contains(cartItem)) {
-            throw new RuntimeException("CartItem does not belong to this cart");
+            throw new RuntimeException("장바구니에 속하지 않은 상품입니다.");
         }
 
         cartItem.setQuantity(newQuantity);

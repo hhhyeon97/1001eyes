@@ -13,7 +13,7 @@ import org.springframework.web.bind.annotation.*;
 import java.util.List;
 
 @RestController
-@RequestMapping("/api/cart")
+@RequestMapping("/api/carts")
 public class CartController {
 
     private final CartService cartService;
@@ -46,18 +46,18 @@ public class CartController {
         }
     }
 
-    @PostMapping("/add")
+    @PostMapping
     public ResponseEntity<String> addItemToCart(@RequestBody CartItemDto cartItemDto, @AuthenticationPrincipal UserDetailsImpl userDetails) {
         Long userId = userDetails.getUser().getId();
         try {
             cartService.addItemToCart(userId, cartItemDto.getProductId(), cartItemDto.getQuantity());
-            return ResponseEntity.ok("아이템이 장바구니에 추가되었습니다.");
+            return ResponseEntity.ok("상품이 장바구니에 추가되었습니다.");
         } catch (Exception e) {
             return ResponseEntity.badRequest().body(e.getMessage());
         }
     }
 
-    @PostMapping("/remove")
+    @DeleteMapping
     public ResponseEntity<String> removeItemFromCart(@AuthenticationPrincipal UserDetailsImpl userDetails,
                                                      @RequestParam Long cartItemId) {
         Long userId = userDetails.getUser().getId();
@@ -69,7 +69,7 @@ public class CartController {
         }
     }
 
-    @PostMapping("/update")
+    @PutMapping
     public ResponseEntity<String> updateCartItemQuantity(@AuthenticationPrincipal UserDetailsImpl userDetails,
                                                          @RequestParam Long cartItemId,
                                                          @RequestParam Integer newQuantity) {

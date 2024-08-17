@@ -32,7 +32,7 @@ public class OrderController {
     public ResponseEntity<String> cancelOrder(@RequestParam Long orderId) {
         try {
             orderService.cancelOrder(orderId);
-            return ResponseEntity.ok("Order canceled successfully");
+            return ResponseEntity.ok("주문 취소 완료");
         } catch (Exception e) {
             return ResponseEntity.badRequest().body(e.getMessage());
         }
@@ -42,19 +42,19 @@ public class OrderController {
     public ResponseEntity<String> requestReturn(@RequestParam Long orderId) {
         try {
             orderService.requestReturn(orderId);
-            return ResponseEntity.ok("Return request submitted successfully");
+            return ResponseEntity.ok("반품 요청 완료");
         } catch (Exception e) {
             return ResponseEntity.badRequest().body(e.getMessage());
         }
     }
 
-    @PostMapping("/create")
+    @PostMapping
     public ResponseEntity<String> createOrder(@AuthenticationPrincipal UserDetailsImpl userDetails,
                                               @RequestBody CreateOrderDto createOrderDto) {
         try {
             Long userId = userDetails.getUser().getId();
             Order order = orderService.createOrder(userId, createOrderDto.getItems());
-            return ResponseEntity.ok("Order created successfully with ID: " + order.getId());
+            return ResponseEntity.ok("주문 완료 -> 주문번호 : " + order.getId());
         } catch (Exception e) {
             return ResponseEntity.badRequest().body(e.getMessage());
         }
