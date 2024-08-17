@@ -31,7 +31,7 @@ public class UserService {
     private final ReceiverRepository receiverRepository;
 
     public UserService(UserRepository userRepository, PasswordEncoder passwordEncoder, JavaMailSender mailSender, AddressRepository addressRepository, JwtUtil jwtUtil
-    , CartRepository cartRepository, ReceiverRepository receiverRepository) {
+            , CartRepository cartRepository, ReceiverRepository receiverRepository) {
         this.userRepository = userRepository;
         this.passwordEncoder = passwordEncoder;
         this.mailSender = mailSender;
@@ -40,6 +40,7 @@ public class UserService {
         this.cartRepository = cartRepository;
         this.receiverRepository = receiverRepository;
     }
+
     // ADMIN_TOKEN
     private final String ADMIN_TOKEN = "AAABnvxRVklrnYxKZ0aHgTBcXukeZygoC";
 
@@ -57,7 +58,7 @@ public class UserService {
         // 중복 이메일 확인
         String email = requestDto.getEmail();
 
-// 이메일 암호화
+        // 이메일 암호화
         String encryptedEmail;
         try {
             encryptedEmail = EncryptionUtils.encrypt(email);
@@ -67,9 +68,8 @@ public class UserService {
 
         Optional<User> checkEmail = userRepository.findByEmail(encryptedEmail);
         if (checkEmail.isPresent()) {
-            throw new IllegalArgumentException("중복된 이메일 입니다.");
+            throw new IllegalArgumentException("중복된 이메일이 존재합니다.");
         }
-
 
         String phone = requestDto.getPhone();
         String name = requestDto.getName();
@@ -91,7 +91,6 @@ public class UserService {
         String encryptedZipcode;
 
         try {
-//            encryptedEmail = EncryptionUtils.encrypt(email);
             encryptedPhone = EncryptionUtils.encrypt(phone);
             encryptedName = EncryptionUtils.encrypt(name);
             encryptedAddress = EncryptionUtils.encrypt(requestDto.getAddress());
@@ -113,7 +112,7 @@ public class UserService {
         cartRepository.save(cart);
 
         // Receiver 객체 생성 -> 가입시엔 유저 이름과 번호로 받는 분 성함, 번호 저장함 (추후 프로필수정에서 변경 가능)
-        Receiver receiver = new Receiver(requestDto.getName(), requestDto.getPhone());
+        Receiver receiver = new Receiver(encryptedName, encryptedPhone);
 
         // Receiver 저장
         receiverRepository.save(receiver);
@@ -147,6 +146,7 @@ public class UserService {
             return "가입된 사용자가 없습니다.";
         }
     }
+
     // 패스워드 변경
     public void changePassword(String username, String oldPassword, String newPassword, HttpServletResponse response) {
         Optional<User> userOptional = userRepository.findByUsername(username);

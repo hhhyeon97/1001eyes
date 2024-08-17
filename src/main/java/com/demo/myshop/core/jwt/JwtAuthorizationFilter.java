@@ -29,9 +29,9 @@ public class JwtAuthorizationFilter extends OncePerRequestFilter {
     }
 
     @Override
-    protected void doFilterInternal(HttpServletRequest req, HttpServletResponse res, FilterChain filterChain) throws ServletException, IOException {
+    protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain) throws ServletException, IOException {
 
-        String tokenValue = jwtUtil.getTokenFromRequest(req);
+        String tokenValue = jwtUtil.getTokenFromRequest(request);
 
         if (StringUtils.hasText(tokenValue)) {
             // JWT 토큰 substring
@@ -40,6 +40,18 @@ public class JwtAuthorizationFilter extends OncePerRequestFilter {
 
             if (!jwtUtil.validateToken(tokenValue)) {
                 log.error("Token Error");
+
+                // 응답 메시지 작성
+                response.setContentType("application/json");
+                response.setCharacterEncoding("UTF-8");
+                // 상태 코드 보내기
+                response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
+                String responseMessage = "{\"message\":\"쿠키가 만료되었습니다. 로그인 후 이용해 주세요\"}";
+                response.getWriter().write(responseMessage);
+
+                // 로그아웃 처리 (JWT 쿠키 삭제)
+                jwtUtil.removeJwtCookie(response);
+
                 return;
             }
 
@@ -53,7 +65,7 @@ public class JwtAuthorizationFilter extends OncePerRequestFilter {
             }
         }
 
-        filterChain.doFilter(req, res);
+        filterChain.doFilter(request, response);
     }
 
     // 인증 처리

@@ -7,6 +7,7 @@ import com.demo.myshop.dto.RegisterRequestDto;
 import com.demo.myshop.repository.UserRepository;
 import com.demo.myshop.service.UserService;
 import jakarta.servlet.http.HttpServletResponse;
+import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -22,7 +23,7 @@ public class UserController {
     }
 
     @PostMapping("/register")
-    public ResponseEntity<ApiUtils.ApiResult<String>> register(@RequestBody RegisterRequestDto requestDto) {
+    public ResponseEntity<ApiUtils.ApiResult<String>> register( @Valid @RequestBody RegisterRequestDto requestDto) {
         try {
             userService.join(requestDto);
             return ResponseEntity.ok(ApiUtils.success("회원가입 요청이 완료되었습니다. 이메일 인증을 완료해 주세요."));
