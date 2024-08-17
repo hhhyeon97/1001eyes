@@ -58,11 +58,11 @@ public class OrderService {
     // 주문 취소 메서드
     public void cancelOrder(Long orderId) {
         Order order = orderRepository.findById(orderId)
-                .orElseThrow(() -> new RuntimeException("Order not found"));
+                .orElseThrow(() -> new RuntimeException("해당하는 주문 정보가 없습니다."));
 
         // 상태가 '배송중' 이상인 경우 취소 불가
         if (order.getStatus() != OrderStatus.PENDING) {
-            throw new RuntimeException("Order cannot be canceled as it is already being shipped or delivered");
+            throw new RuntimeException("이미 배송 중이거나 배달 중이므로 주문을 취소할 수 없습니다.");
         }
 
         // 재고 복구
@@ -80,15 +80,15 @@ public class OrderService {
     // 반품 요청
     public void requestReturn(Long orderId) {
         Order order = orderRepository.findById(orderId)
-                .orElseThrow(() -> new RuntimeException("Order not found"));
+                .orElseThrow(() -> new RuntimeException("해당하는 주문 정보가 없습니다."));
 
         if (order.getStatus() != OrderStatus.DELIVERED || order.getReturnRequestDate() != null) {
-            throw new RuntimeException("Return request not allowed");
+            throw new RuntimeException("반품 요청 불가");
         }
 
         LocalDateTime requestDate = LocalDateTime.now();
         if (requestDate.isAfter(order.getDeliveryDate().plusMinutes(5))) {
-            throw new RuntimeException("Return period expired");
+            throw new RuntimeException("반품 기간이 만료되었습니다.");
         }
 
         order.setReturnRequestDate(requestDate);
@@ -101,7 +101,7 @@ public class OrderService {
     public Order createOrder(Long userId, List<OrderItemDto> orderItems) {
         // 사용자 조회
         User user = userRepository.findById(userId)
-                .orElseThrow(() -> new RuntimeException("User not found"));
+                .orElseThrow(() -> new RuntimeException("사용자를 찾을 수 없습니다."));
 
         // 총 가격 계산 및 재고 확인
         int totalPrice = 0;
@@ -109,11 +109,11 @@ public class OrderService {
         for (OrderItemDto dto : orderItems) {
             // 제품 조회
             Product product = productRepository.findById(dto.getProductId())
-                    .orElseThrow(() -> new RuntimeException("Product not found"));
+                    .orElseThrow(() -> new RuntimeException("해당 상품 없음"));
 
             // 재고 확인
             if (product.getStock() < dto.getQuantity()) {
-                throw new RuntimeException("Insufficient stock for product " + product.getId());
+                throw new RuntimeException("상품 재고 부족 : " + product.getId());
             }
 
             // 총 가격 업데이트
@@ -134,7 +134,7 @@ public class OrderService {
         for (OrderItemDto dto : orderItems) {
             // 제품 조회 (이미 재고 확인은 했으므로 재조회 필요 없음)
             Product product = productRepository.findById(dto.getProductId())
-                    .orElseThrow(() -> new RuntimeException("Product not found"));
+                    .orElseThrow(() -> new RuntimeException("해당 상품 없음"));
 
             // 제품 재고 감소
             product.setStock(product.getStock() - dto.getQuantity());

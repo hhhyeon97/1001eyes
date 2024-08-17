@@ -4,12 +4,10 @@ package com.demo.myshop.service;
 import com.demo.myshop.core.EncryptionUtils;
 import com.demo.myshop.core.jwt.JwtUtil;
 import com.demo.myshop.dto.RegisterRequestDto;
-import com.demo.myshop.model.Address;
-import com.demo.myshop.model.Cart;
-import com.demo.myshop.model.User;
-import com.demo.myshop.model.UserRoleEnum;
+import com.demo.myshop.model.*;
 import com.demo.myshop.repository.AddressRepository;
 import com.demo.myshop.repository.CartRepository;
+import com.demo.myshop.repository.ReceiverRepository;
 import com.demo.myshop.repository.UserRepository;
 import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.mail.SimpleMailMessage;
@@ -30,15 +28,17 @@ public class UserService {
     private final AddressRepository addressRepository;
     private final JwtUtil jwtUtil;
     private final CartRepository cartRepository;
+    private final ReceiverRepository receiverRepository;
 
     public UserService(UserRepository userRepository, PasswordEncoder passwordEncoder, JavaMailSender mailSender, AddressRepository addressRepository, JwtUtil jwtUtil
-    , CartRepository cartRepository) {
+    , CartRepository cartRepository, ReceiverRepository receiverRepository) {
         this.userRepository = userRepository;
         this.passwordEncoder = passwordEncoder;
         this.mailSender = mailSender;
         this.addressRepository = addressRepository;
         this.jwtUtil = jwtUtil;
         this.cartRepository = cartRepository;
+        this.receiverRepository = receiverRepository;
     }
     // ADMIN_TOKEN
     private final String ADMIN_TOKEN = "AAABnvxRVklrnYxKZ0aHgTBcXukeZygoC";
@@ -51,15 +51,25 @@ public class UserService {
         // 중복 아이디 확인
         Optional<User> checkUsername = userRepository.findByUsername(username);
         if (checkUsername.isPresent()) {
-            throw new IllegalArgumentException("중복된 사용자가 존재합니다.");
+            throw new IllegalArgumentException("중복된 아이디가 존재합니다.");
         }
 
         // 중복 이메일 확인
         String email = requestDto.getEmail();
-        Optional<User> checkEmail = userRepository.findByEmail(email);
-        if (checkEmail.isPresent()) {
-            throw new IllegalArgumentException("중복된 Email 입니다.");
+
+// 이메일 암호화
+        String encryptedEmail;
+        try {
+            encryptedEmail = EncryptionUtils.encrypt(email);
+        } catch (Exception e) {
+            throw new RuntimeException("이메일 암호화 실패", e);
         }
+
+        Optional<User> checkEmail = userRepository.findByEmail(encryptedEmail);
+        if (checkEmail.isPresent()) {
+            throw new IllegalArgumentException("중복된 이메일 입니다.");
+        }
+
 
         String phone = requestDto.getPhone();
         String name = requestDto.getName();
@@ -74,7 +84,6 @@ public class UserService {
         }
 
         // 데이터 암호화
-        String encryptedEmail;
         String encryptedPhone;
         String encryptedName;
         String encryptedAddress;
@@ -82,7 +91,7 @@ public class UserService {
         String encryptedZipcode;
 
         try {
-            encryptedEmail = EncryptionUtils.encrypt(email);
+//            encryptedEmail = EncryptionUtils.encrypt(email);
             encryptedPhone = EncryptionUtils.encrypt(phone);
             encryptedName = EncryptionUtils.encrypt(name);
             encryptedAddress = EncryptionUtils.encrypt(requestDto.getAddress());
@@ -103,14 +112,19 @@ public class UserService {
         cart.setUser(user);
         cartRepository.save(cart);
 
-        // 주소 등록
+        // Receiver 객체 생성 -> 가입시엔 유저 이름과 번호로 받는 분 성함, 번호 저장함 (추후 프로필수정에서 변경 가능)
+        Receiver receiver = new Receiver(requestDto.getName(), requestDto.getPhone());
+
+        // Receiver 저장
+        receiverRepository.save(receiver);
+
+        // Address 등록 (Receiver 객체를 포함)
         Address address = new Address(encryptedAddress, encryptedAddressDetail, encryptedZipcode,
-                requestDto.getName(), requestDto.isDefaultAddress(),
-                requestDto.getAddressPhoneNumber(), requestDto.getAddressMessage(), user);
+                requestDto.isDefaultAddress(), requestDto.getAddressMessage(), user, receiver);
         addressRepository.save(address);
 
         // 이메일 발송
-        String verificationLink = "http://localhost:8080/api/user/verify?email=" + encryptedEmail + "&token=" + verificationToken;
+        String verificationLink = "http://localhost:8080/api/users/verify?email=" + encryptedEmail + "&token=" + verificationToken;
         String subject = "Email Verification";
         String text = "Please click the following link to verify your email: " + verificationLink;
         sendEmail(email, subject, text);
@@ -162,8 +176,8 @@ public class UserService {
         mailSender.send(message);
     }
 
-    public User findByUsername(String username) {
-        Optional<User> userOptional = userRepository.findByUsername(username);
-        return userOptional.orElse(null); // 사용자가 없으면 null 반환
-    }
+//    public User findByUsername(String username) {
+//        Optional<User> userOptional = userRepository.findByUsername(username);
+//        return userOptional.orElse(null); // 사용자가 없으면 null 반환
+//    }
 }

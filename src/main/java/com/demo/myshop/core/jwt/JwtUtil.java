@@ -68,7 +68,8 @@ public class JwtUtil {
     // JWT Cookie 에 저장
     public void addJwtToCookie(String token, HttpServletResponse res) {
         try {
-            token = URLEncoder.encode(token, "utf-8").replaceAll("\\+", "%20"); // Cookie Value 에는 공백이 불가능해서 encoding 진행
+            // Cookie Value 에는 공백이 불가능해서 encoding 진행
+            token = URLEncoder.encode(token, "utf-8").replaceAll("\\+", "%20");
 
             Cookie cookie = new Cookie(AUTHORIZATION_HEADER, token); // Name-Value
             cookie.setPath("/");
@@ -86,7 +87,7 @@ public class JwtUtil {
             return tokenValue.substring(7);
         }
         logger.error("Not Found Token");
-        throw new NullPointerException("Not Found Token");
+        throw new NullPointerException("토큰을 찾을 수 없습니다.");
     }
 
     // 토큰 검증
