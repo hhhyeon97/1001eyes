@@ -4,6 +4,7 @@ import com.demo.myshop.core.ApiUtils;
 import com.demo.myshop.core.jwt.JwtUtil;
 import com.demo.myshop.dto.ChangePasswordRequestDto;
 import com.demo.myshop.dto.RegisterRequestDto;
+import com.demo.myshop.model.User;
 import com.demo.myshop.repository.UserRepository;
 import com.demo.myshop.service.UserService;
 import jakarta.servlet.http.HttpServletResponse;
@@ -12,34 +13,48 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.Optional;
+
 @RestController
 @RequestMapping("/api/users")
 public class UserController {
 
     private final UserService userService;
+    private final UserRepository userRepository;
 
-    public UserController(UserService userService) {
+    public UserController(UserService userService, UserRepository userRepository) {
         this.userService = userService;
+        this.userRepository = userRepository;
     }
-
-    @PostMapping("/register")
-    public ResponseEntity<ApiUtils.ApiResult<String>> register( @Valid @RequestBody RegisterRequestDto requestDto) {
+    // 이메일 인증 코드 전송
+    @PostMapping("/send")
+    public ResponseEntity<ApiUtils.ApiResult<String>> sendVerificationCode(@RequestParam String email) {
         try {
-            userService.join(requestDto);
-            return ResponseEntity.ok(ApiUtils.success("회원가입 요청이 완료되었습니다. 이메일 인증을 완료해 주세요."));
+            userService.sendVerificationCode(email);
+            return ResponseEntity.ok(ApiUtils.success("인증 코드가 이메일로 발송되었습니다."));
         } catch (IllegalArgumentException e) {
             return ResponseEntity.badRequest().body(ApiUtils.error(e.getMessage()));
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(ApiUtils.error(e.getMessage()));
         }
     }
 
+@PostMapping("/register")
+public ResponseEntity<ApiUtils.ApiResult<String>> register(@Valid @RequestBody RegisterRequestDto requestDto) {
+    try {
+        userService.join(requestDto);
+        return ResponseEntity.ok(ApiUtils.success("회원가입이 완료되었습니다."));
+    } catch (IllegalArgumentException e) {
+        return ResponseEntity.badRequest().body(ApiUtils.error(e.getMessage()));
+    }
+}
+
     @PostMapping("/verify")
-    public ResponseEntity<String> verifyEmail(@RequestParam String email, @RequestParam String token) {
+    public ResponseEntity<String> verifyEmail(@RequestParam String email, @RequestParam String verificationCode) {
         try {
-            // 이메일 복호화 및 인증 처리
-            String result = userService.verifyEmail(email, token);
+            String result = userService.verifyEmail(email, verificationCode);
             return ResponseEntity.ok(result);
         } catch (RuntimeException e) {
-            // 에러 처리
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(e.getMessage());
         }
     }

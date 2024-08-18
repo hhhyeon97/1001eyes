@@ -8,6 +8,7 @@ import com.demo.myshop.model.*;
 import com.demo.myshop.repository.AddressRepository;
 import com.demo.myshop.repository.CartRepository;
 import com.demo.myshop.repository.UserRepository;
+import com.demo.myshop.repository.VerificationTokenRepository;
 import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.mail.SimpleMailMessage;
 import org.springframework.mail.javamail.JavaMailSender;
@@ -15,8 +16,8 @@ import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
+import java.time.LocalDateTime;
 import java.util.Optional;
-import java.util.UUID;
 
 @Service
 public class UserService {
@@ -27,22 +28,101 @@ public class UserService {
     private final AddressRepository addressRepository;
     private final JwtUtil jwtUtil;
     private final CartRepository cartRepository;
+    private final VerificationTokenRepository verificationTokenRepository;
 
     public UserService(UserRepository userRepository, PasswordEncoder passwordEncoder, JavaMailSender mailSender, AddressRepository addressRepository, JwtUtil jwtUtil
-            , CartRepository cartRepository) {
+            , CartRepository cartRepository, VerificationTokenRepository verificationTokenRepository) {
         this.userRepository = userRepository;
         this.passwordEncoder = passwordEncoder;
         this.mailSender = mailSender;
         this.addressRepository = addressRepository;
         this.jwtUtil = jwtUtil;
         this.cartRepository = cartRepository;
+        this.verificationTokenRepository = verificationTokenRepository;
     }
 
-    // ADMIN_TOKEN
+    // 관리자 인증 토큰
     private final String ADMIN_TOKEN = "AAABnvxRVklrnYxKZ0aHgTBcXukeZygoC";
 
-    // 회원 가입
+
+    public void sendVerificationCode(String email) {
+        String encryptedEmail;
+        try {
+            encryptedEmail = EncryptionUtils.encrypt(email);
+        } catch (Exception e) {
+            throw new RuntimeException("이메일 암호화 실패", e);
+        }
+
+        // 중복 이메일 확인
+        Optional<User> checkEmail = userRepository.findByEmail(encryptedEmail);
+        if (checkEmail.isPresent()) {
+            throw new IllegalArgumentException("이미 가입된 이메일입니다.");
+        }
+
+        // 6자리 인증 코드 생성
+        String verificationCode = String.valueOf((int) (Math.random() * 900000) + 100000);
+
+        // 인증 코드 유효시간 설정 (예: 10분)
+        LocalDateTime now = LocalDateTime.now();
+        LocalDateTime expiryDate = now.plusMinutes(10);
+
+        // 기존 코드 삭제 후 새 코드 저장 (사용자가 다시 요청할 수 있으므로)
+        verificationTokenRepository.deleteByEmail(encryptedEmail);
+
+        // User 객체는 아직 존재하지 않으므로 null로 설정
+        VerificationToken token = new VerificationToken(encryptedEmail, verificationCode, expiryDate, null);
+        verificationTokenRepository.save(token);
+
+        // 이메일 전송
+        String subject = "Your Verification Code";
+        String text = "Your verification code is: " + verificationCode;
+        sendEmail(email, subject, text);
+    }
+
+    public String verifyEmail(String email, String verificationCode) {
+        String encryptedEmail;
+        try {
+            encryptedEmail = EncryptionUtils.encrypt(email);
+        } catch (Exception e) {
+            throw new RuntimeException("이메일 암호화 실패", e);
+        }
+
+        VerificationToken token = verificationTokenRepository.findByEmail(encryptedEmail)
+                .orElseThrow(() -> new IllegalArgumentException("유효하지 않은 인증 요청입니다."));
+
+        if (token.isVerified()) {
+            throw new IllegalArgumentException("이미 인증된 이메일입니다.");
+        }
+
+        if (!token.getVerificationCode().equals(verificationCode)) {
+            throw new IllegalArgumentException("잘못된 인증 코드입니다.");
+        }
+
+        if (LocalDateTime.now().isAfter(token.getExpiryDate())) {
+            throw new IllegalArgumentException("인증 코드가 만료되었습니다.");
+        }
+
+        token.setVerified(true);
+        verificationTokenRepository.save(token);
+
+        return "이메일 인증이 완료되었습니다.";
+    }
+
     public void join(RegisterRequestDto requestDto) {
+        String email = requestDto.getEmail();
+        String encryptedEmail;
+        try {
+            encryptedEmail = EncryptionUtils.encrypt(email);
+        } catch (Exception e) {
+            throw new RuntimeException("이메일 암호화 실패", e);
+        }
+
+        VerificationToken token = verificationTokenRepository.findByEmail(encryptedEmail)
+                .orElseThrow(() -> new IllegalArgumentException("이메일 인증을 먼저 진행해 주세요."));
+        if (!token.isVerified()) {
+            throw new IllegalArgumentException("이메일 인증이 완료되지 않았습니다.");
+        }
+
         String username = requestDto.getUsername();
         String password = passwordEncoder.encode(requestDto.getPassword());
 
@@ -52,17 +132,7 @@ public class UserService {
             throw new IllegalArgumentException("중복된 아이디가 존재합니다.");
         }
 
-        // 중복 이메일 확인
-        String email = requestDto.getEmail();
-
-        // 이메일 암호화
-        String encryptedEmail;
-        try {
-            encryptedEmail = EncryptionUtils.encrypt(email);
-        } catch (Exception e) {
-            throw new RuntimeException("이메일 암호화 실패", e);
-        }
-
+        // 이메일 중복 확인
         Optional<User> checkEmail = userRepository.findByEmail(encryptedEmail);
         if (checkEmail.isPresent()) {
             throw new IllegalArgumentException("중복된 이메일이 존재합니다.");
@@ -98,9 +168,7 @@ public class UserService {
         }
 
         // 사용자 등록
-        String verificationToken = UUID.randomUUID().toString();
-        // 토큰 생성 및 저장
-        User user = new User(username, password, encryptedEmail, encryptedPhone, encryptedName, role, false, verificationToken);
+        User user = new User(username, password, encryptedEmail, encryptedPhone, encryptedName, role);
         userRepository.save(user);
 
         // 장바구니 생성
@@ -112,30 +180,6 @@ public class UserService {
         Address address = new Address(encryptedAddress, encryptedAddressDetail, encryptedZipcode,
                 requestDto.isDefault(), requestDto.getAddressMessage(), user);
         addressRepository.save(address);
-
-        // 이메일 발송
-        String verificationLink = "http://localhost:8080/api/users/verify?email=" + encryptedEmail + "&token=" + verificationToken;
-        String subject = "Email Verification";
-        String text = "Please click the following link to verify your email: " + verificationLink;
-        sendEmail(email, subject, text);
-    }
-
-    // 이메일 인증 체크
-    public String verifyEmail(String encryptedEmail, String token) {
-        Optional<User> userOptional = userRepository.findByEmail(encryptedEmail);
-        if (userOptional.isPresent()) {
-            User user = userOptional.get();
-            if (token.equals(user.getEmailVerificationToken())) {
-                user.setEmailVerified(true);
-                user.setEmailVerificationToken(null); // 인증 후 토큰 삭제
-                userRepository.save(user);
-                return "이메일 인증 성공. 이제 회원가입을 완료할 수 있습니다.";
-            } else {
-                return "유효하지 않은 인증 토큰입니다.";
-            }
-        } else {
-            return "가입된 사용자가 없습니다.";
-        }
     }
 
     // 패스워드 변경
@@ -158,7 +202,8 @@ public class UserService {
         }
     }
 
-    // 이메일 전송
+
+    // 이메일 전송 메서드
     private void sendEmail(String to, String subject, String text) {
         SimpleMailMessage message = new SimpleMailMessage();
         message.setTo(to);
@@ -166,9 +211,5 @@ public class UserService {
         message.setText(text);
         mailSender.send(message);
     }
-
-//    public User findByUsername(String username) {
-//        Optional<User> userOptional = userRepository.findByUsername(username);
-//        return userOptional.orElse(null); // 사용자가 없으면 null 반환
-//    }
 }
+

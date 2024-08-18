@@ -43,8 +43,11 @@ public class User {
     @Enumerated(value = EnumType.STRING)
     private UserRoleEnum role;
 
-    private boolean isEmailVerified; // 이메일 인증 상태
-    private String emailVerificationToken; // 이메일 인증 토큰
+    @OneToOne(mappedBy = "user", cascade = CascadeType.ALL)
+    private VerificationToken verificationToken; // 연관 관계 설정
+
+//    @Column(name = "is_email_verified", nullable = false)
+//    private boolean isEmailVerified = false;  // 기본값을 false로 설정
 
     @CreationTimestamp
     private LocalDateTime created_at;
@@ -52,14 +55,12 @@ public class User {
     @UpdateTimestamp
     private LocalDateTime updated_at;
 
-    public User(String username, String password, String email, String phone, String name, UserRoleEnum role, boolean isEmailVerified, String emailVerificationToken) {
+    public User(String username, String password, String email, String phone, String name, UserRoleEnum role) {
         this.username = username;
         this.password = password;
         this.email = email;
         this.phone = phone;
         this.name = name;
         this.role = role;
-        this.isEmailVerified = isEmailVerified;
-        this.emailVerificationToken = emailVerificationToken;
     }
 }
