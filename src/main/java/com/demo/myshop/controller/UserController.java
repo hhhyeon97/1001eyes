@@ -38,16 +38,6 @@ public class UserController {
         }
     }
 
-    @PostMapping("/register")
-    public ResponseEntity<ApiUtils.ApiResult<String>> register(@Valid @RequestBody RegisterRequestDto requestDto) {
-        try {
-            userService.join(requestDto);
-            return ResponseEntity.ok(ApiUtils.success("회원가입이 완료되었습니다."));
-        } catch (IllegalArgumentException e) {
-            return ResponseEntity.badRequest().body(ApiUtils.error(e.getMessage()));
-        }
-    }
-
     @PostMapping("/verify")
     public ResponseEntity<String> verifyEmail(@RequestParam String email, @RequestParam String verificationCode) {
         try {
@@ -55,6 +45,16 @@ public class UserController {
             return ResponseEntity.ok(result);
         } catch (RuntimeException e) {
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(e.getMessage());
+        }
+    }
+
+    @PostMapping("/register")
+    public ResponseEntity<ApiUtils.ApiResult<String>> register(@Valid @RequestBody RegisterRequestDto requestDto) {
+        try {
+            userService.join(requestDto);
+            return ResponseEntity.ok(ApiUtils.success("회원가입이 완료되었습니다."));
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest().body(ApiUtils.error(e.getMessage()));
         }
     }
 

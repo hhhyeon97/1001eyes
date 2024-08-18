@@ -15,6 +15,7 @@ import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 import java.util.Optional;
@@ -44,8 +45,7 @@ public class UserService {
     // 관리자 인증 토큰
     private final String ADMIN_TOKEN = "AAABnvxRVklrnYxKZ0aHgTBcXukeZygoC";
 
-
-    // 1. 이메일에 인증 코드 전송
+    // 이메일 인증 코드 전송
     public void sendVerificationCode(String email) {
         String encryptedEmail;
         try {
@@ -67,12 +67,23 @@ public class UserService {
         LocalDateTime now = LocalDateTime.now();
         LocalDateTime expiryDate = now.plusMinutes(10);
 
-        // 기존 코드 삭제 후 새 코드 저장 (사용자가 다시 요청할 수 있으므로)
-        verificationTokenRepository.deleteByEmail(encryptedEmail);
+        // 기존 인증 토큰이 있는지 확인
+        VerificationToken existingToken = verificationTokenRepository.findByEmail(encryptedEmail).orElse(null);
 
-        // User 객체는 아직 존재하지 않으므로 null로 설정
-        VerificationToken token = new VerificationToken(encryptedEmail, verificationCode, expiryDate, null);
-        verificationTokenRepository.save(token);
+        if (existingToken != null) {
+            // 기존 인증 토큰이 있고, 인증되지 않은 경우 새로운 인증 코드로 업데이트
+            if (!existingToken.isVerified()) {
+                existingToken.setVerificationCode(verificationCode);
+                existingToken.setExpiryDate(expiryDate);
+                verificationTokenRepository.save(existingToken);
+            } else {
+                throw new IllegalArgumentException("이미 인증된 이메일입니다.");
+            }
+        } else {
+            // 새 인증 토큰 생성
+            VerificationToken token = new VerificationToken(encryptedEmail, verificationCode, expiryDate);
+            verificationTokenRepository.save(token);
+        }
 
         // 이메일 전송
         String subject = "Your Verification Code";
@@ -80,7 +91,7 @@ public class UserService {
         sendEmail(email, subject, text);
     }
 
-    // 2. 이메일 인증
+    // 이메일 인증 처리
     public String verifyEmail(String email, String verificationCode) {
         String encryptedEmail;
         try {
@@ -88,6 +99,7 @@ public class UserService {
         } catch (Exception e) {
             throw new RuntimeException("이메일 암호화 실패", e);
         }
+
         VerificationToken token = verificationTokenRepository.findByEmail(encryptedEmail)
                 .orElseThrow(() -> new IllegalArgumentException("유효하지 않은 인증 요청입니다."));
 
@@ -109,6 +121,8 @@ public class UserService {
         return "이메일 인증이 완료되었습니다.";
     }
 
+    // 회원가입 처리 후 인증 토큰 삭제
+    @Transactional // 트랜잭션 처리 추가
     public void join(RegisterRequestDto requestDto) {
         String email = requestDto.getEmail();
         String encryptedEmail;
@@ -181,7 +195,11 @@ public class UserService {
         Address address = new Address(encryptedAddress, encryptedAddressDetail, encryptedZipcode,
                 requestDto.isDefault(), requestDto.getAddressMessage(), user);
         addressRepository.save(address);
+
+        // 인증 토큰 삭제
+        verificationTokenRepository.deleteByEmail(encryptedEmail);
     }
+
 
     // 패스워드 변경
     public void changePassword(String username, String oldPassword, String newPassword, HttpServletResponse response) {

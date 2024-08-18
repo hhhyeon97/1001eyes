@@ -44,9 +44,6 @@ public class User {
     @Enumerated(value = EnumType.STRING)
     private UserRoleEnum role;
 
-    @OneToOne(mappedBy = "user", cascade = CascadeType.ALL)
-    private VerificationToken verificationToken;
-
     @CreationTimestamp
     private LocalDateTime created_at;
 

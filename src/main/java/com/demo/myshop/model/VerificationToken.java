@@ -30,15 +30,10 @@ public class VerificationToken {
     @Column(nullable = false)
     private boolean isVerified = false;
 
-    @OneToOne
-    @JoinColumn(name = "user_id")
-    private User user;
-
-    public VerificationToken(String email, String verificationCode, LocalDateTime expiryDate, User user) {
+    public VerificationToken(String email, String verificationCode, LocalDateTime expiryDate) {
         this.email = email;
         this.verificationCode = verificationCode;
         this.expiryDate = expiryDate;
-        this.user = user;
         this.isVerified = false;
     }
 }
