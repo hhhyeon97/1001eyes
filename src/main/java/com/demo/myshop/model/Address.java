@@ -27,19 +27,14 @@ public class Address {
     @JoinColumn(name = "user_id") // 외래 키 열 이름 명시
     private User user;
 
-    @OneToOne
-    @JoinColumn(name = "receiver_id")
-    private Receiver receiver; // Receiver와 1:1 관계
-
     // 생성자
     public Address(String encryptedAddress, String encryptedAddressDetail, String encryptedZipcode,
-                   boolean isDefault, String message, User user, Receiver receiver) {
+                   boolean isDefault, String message, User user) {
         this.encryptedAddress = encryptedAddress;
         this.encryptedAddressDetail = encryptedAddressDetail;
         this.encryptedZipcode = encryptedZipcode;
         this.isDefault = isDefault;
         this.message = message;
         this.user = user;
-        this.receiver = receiver;
     }
 }

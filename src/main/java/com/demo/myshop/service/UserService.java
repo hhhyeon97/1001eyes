@@ -7,7 +7,6 @@ import com.demo.myshop.dto.RegisterRequestDto;
 import com.demo.myshop.model.*;
 import com.demo.myshop.repository.AddressRepository;
 import com.demo.myshop.repository.CartRepository;
-import com.demo.myshop.repository.ReceiverRepository;
 import com.demo.myshop.repository.UserRepository;
 import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.mail.SimpleMailMessage;
@@ -28,17 +27,15 @@ public class UserService {
     private final AddressRepository addressRepository;
     private final JwtUtil jwtUtil;
     private final CartRepository cartRepository;
-    private final ReceiverRepository receiverRepository;
 
     public UserService(UserRepository userRepository, PasswordEncoder passwordEncoder, JavaMailSender mailSender, AddressRepository addressRepository, JwtUtil jwtUtil
-            , CartRepository cartRepository, ReceiverRepository receiverRepository) {
+            , CartRepository cartRepository) {
         this.userRepository = userRepository;
         this.passwordEncoder = passwordEncoder;
         this.mailSender = mailSender;
         this.addressRepository = addressRepository;
         this.jwtUtil = jwtUtil;
         this.cartRepository = cartRepository;
-        this.receiverRepository = receiverRepository;
     }
 
     // ADMIN_TOKEN
@@ -111,15 +108,9 @@ public class UserService {
         cart.setUser(user);
         cartRepository.save(cart);
 
-        // Receiver 객체 생성 -> 가입시엔 유저 이름과 번호로 받는 분 성함, 번호 저장함 (추후 프로필수정에서 변경 가능)
-        Receiver receiver = new Receiver(encryptedName, encryptedPhone);
-
-        // Receiver 저장
-        receiverRepository.save(receiver);
-
-        // Address 등록 (Receiver 객체를 포함)
+        // Address 등록
         Address address = new Address(encryptedAddress, encryptedAddressDetail, encryptedZipcode,
-                requestDto.isDefaultAddress(), requestDto.getAddressMessage(), user, receiver);
+                requestDto.isDefault(), requestDto.getAddressMessage(), user);
         addressRepository.save(address);
 
         // 이메일 발송
