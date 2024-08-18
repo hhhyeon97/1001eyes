@@ -34,8 +34,9 @@ public class User {
 
     private String name;
 
+    // 하나의 사용자는 여러 주소를 가질 수 있음
     @OneToMany(mappedBy = "user")
-    private List<Address> addresses;  // 하나의 사용자는 여러 주소를 가질 수 있음
+    private List<Address> addresses;
 
     private boolean withdraw;
 
@@ -44,10 +45,7 @@ public class User {
     private UserRoleEnum role;
 
     @OneToOne(mappedBy = "user", cascade = CascadeType.ALL)
-    private VerificationToken verificationToken; // 연관 관계 설정
-
-//    @Column(name = "is_email_verified", nullable = false)
-//    private boolean isEmailVerified = false;  // 기본값을 false로 설정
+    private VerificationToken verificationToken;
 
     @CreationTimestamp
     private LocalDateTime created_at;

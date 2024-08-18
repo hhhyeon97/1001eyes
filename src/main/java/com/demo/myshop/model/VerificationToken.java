@@ -25,7 +25,7 @@ public class VerificationToken {
     private String verificationCode;
 
     @Column(nullable = false)
-    private LocalDateTime expiryDate; // 필드 이름 확인
+    private LocalDateTime expiryDate;
 
     @Column(nullable = false)
     private boolean isVerified = false;

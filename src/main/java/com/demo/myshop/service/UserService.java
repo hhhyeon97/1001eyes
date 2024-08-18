@@ -45,6 +45,7 @@ public class UserService {
     private final String ADMIN_TOKEN = "AAABnvxRVklrnYxKZ0aHgTBcXukeZygoC";
 
 
+    // 1. 이메일에 인증 코드 전송
     public void sendVerificationCode(String email) {
         String encryptedEmail;
         try {
@@ -79,6 +80,7 @@ public class UserService {
         sendEmail(email, subject, text);
     }
 
+    // 2. 이메일 인증
     public String verifyEmail(String email, String verificationCode) {
         String encryptedEmail;
         try {
@@ -86,7 +88,6 @@ public class UserService {
         } catch (Exception e) {
             throw new RuntimeException("이메일 암호화 실패", e);
         }
-
         VerificationToken token = verificationTokenRepository.findByEmail(encryptedEmail)
                 .orElseThrow(() -> new IllegalArgumentException("유효하지 않은 인증 요청입니다."));
 

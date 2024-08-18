@@ -20,12 +20,11 @@ import java.util.Optional;
 public class UserController {
 
     private final UserService userService;
-    private final UserRepository userRepository;
 
-    public UserController(UserService userService, UserRepository userRepository) {
+    public UserController(UserService userService) {
         this.userService = userService;
-        this.userRepository = userRepository;
     }
+
     // 이메일 인증 코드 전송
     @PostMapping("/send")
     public ResponseEntity<ApiUtils.ApiResult<String>> sendVerificationCode(@RequestParam String email) {
@@ -39,15 +38,15 @@ public class UserController {
         }
     }
 
-@PostMapping("/register")
-public ResponseEntity<ApiUtils.ApiResult<String>> register(@Valid @RequestBody RegisterRequestDto requestDto) {
-    try {
-        userService.join(requestDto);
-        return ResponseEntity.ok(ApiUtils.success("회원가입이 완료되었습니다."));
-    } catch (IllegalArgumentException e) {
-        return ResponseEntity.badRequest().body(ApiUtils.error(e.getMessage()));
+    @PostMapping("/register")
+    public ResponseEntity<ApiUtils.ApiResult<String>> register(@Valid @RequestBody RegisterRequestDto requestDto) {
+        try {
+            userService.join(requestDto);
+            return ResponseEntity.ok(ApiUtils.success("회원가입이 완료되었습니다."));
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest().body(ApiUtils.error(e.getMessage()));
+        }
     }
-}
 
     @PostMapping("/verify")
     public ResponseEntity<String> verifyEmail(@RequestParam String email, @RequestParam String verificationCode) {
