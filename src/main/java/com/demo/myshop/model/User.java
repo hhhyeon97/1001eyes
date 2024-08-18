@@ -34,8 +34,9 @@ public class User {
 
     private String name;
 
+    // 하나의 사용자는 여러 주소를 가질 수 있음
     @OneToMany(mappedBy = "user")
-    private List<Address> addresses;  // 하나의 사용자는 여러 주소를 가질 수 있음
+    private List<Address> addresses;
 
     private boolean withdraw;
 
@@ -43,23 +44,18 @@ public class User {
     @Enumerated(value = EnumType.STRING)
     private UserRoleEnum role;
 
-    private boolean isEmailVerified; // 이메일 인증 상태
-    private String emailVerificationToken; // 이메일 인증 토큰
-
     @CreationTimestamp
     private LocalDateTime created_at;
 
     @UpdateTimestamp
     private LocalDateTime updated_at;
 
-    public User(String username, String password, String email, String phone, String name, UserRoleEnum role, boolean isEmailVerified, String emailVerificationToken) {
+    public User(String username, String password, String email, String phone, String name, UserRoleEnum role) {
         this.username = username;
         this.password = password;
         this.email = email;
         this.phone = phone;
         this.name = name;
         this.role = role;
-        this.isEmailVerified = isEmailVerified;
-        this.emailVerificationToken = emailVerificationToken;
     }
 }
