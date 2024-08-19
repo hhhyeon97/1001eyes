@@ -2,5 +2,5 @@ rootProject.name = 'myshop'
 
 include(
         "user-service", "product-service", "order-service",
-        "discovery-server", "api-gateway"
+        "discovery-server", "api-gateway", "common"
 )
