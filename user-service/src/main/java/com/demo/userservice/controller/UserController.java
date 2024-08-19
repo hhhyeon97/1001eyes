@@ -1,23 +1,45 @@
 package com.demo.userservice.controller;
 
 import com.demo.userservice.core.ApiUtils;
+import com.demo.userservice.core.jwt.JwtUtil;
 import com.demo.userservice.dto.ChangePasswordRequestDto;
 import com.demo.userservice.dto.RegisterRequestDto;
 import com.demo.userservice.service.UserService;
+import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.Valid;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+@Slf4j
 @RestController
 @RequestMapping("/api/users")
 public class UserController {
 
     private final UserService userService;
+    private final JwtUtil jwtUtil;
 
-    public UserController(UserService userService) {
+    public UserController(UserService userService, JwtUtil jwtUtil) {
         this.userService = userService;
+        this.jwtUtil = jwtUtil;
+    }
+
+    // todo : test !!!
+    @GetMapping("/health")
+    public String health(HttpServletRequest request) {
+        int port = request.getServerPort();
+        log.info("port = {}", port);
+        return String.format("[Member Service] port = %d", request.getServerPort());
+    }
+
+    @PostMapping("/logout")
+    public ResponseEntity<String> logout(HttpServletResponse response) {
+        // JWT 쿠키 삭제
+        jwtUtil.removeJwtCookie(response);
+        // 로그아웃 성공 메시지 반환
+        return ResponseEntity.ok("로그아웃 성공: 쿠키가 삭제되었습니다.");
     }
 
     // 이메일 인증 코드 전송

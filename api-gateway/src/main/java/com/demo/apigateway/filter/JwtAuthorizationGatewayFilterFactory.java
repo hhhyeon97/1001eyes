@@ -36,11 +36,19 @@ public class JwtAuthorizationGatewayFilterFactory extends AbstractGatewayFilterF
                 log.info(tokenValue);
 
                 if (!jwtUtil.validateToken(tokenValue)) {
-                    log.error("Token Error");
-                    // 응답 메시지 작성 및 상태 코드 설정
+//                    log.error("Token Error");
+//                    // 응답 메시지 작성 및 상태 코드 설정
+//                    exchange.getResponse().setStatusCode(HttpStatus.UNAUTHORIZED);
+//                    exchange.getResponse().getHeaders().add("Content-Type", "application/json");
+//                    String responseMessage = "{\"message\":\"쿠키가 만료되었습니다. 로그인 후 이용해 주세요\"}";
+//                    return exchange.getResponse().writeWith(Mono.just(exchange.getResponse().bufferFactory().wrap(responseMessage.getBytes())));
+
+                    log.error("Expired JWT token, 로그아웃 처리됩니다.");
+                    // 쿠키 제거 메서드 호출
+                    jwtUtil.removeJwtCookie(exchange.getResponse());
+                    // 클라이언트에서 추가적인 처리 유도 (ex: 재로그인 메시지)
                     exchange.getResponse().setStatusCode(HttpStatus.UNAUTHORIZED);
-                    exchange.getResponse().getHeaders().add("Content-Type", "application/json");
-                    String responseMessage = "{\"message\":\"쿠키가 만료되었습니다. 로그인 후 이용해 주세요\"}";
+                    String responseMessage = "{\"message\":\"토큰이 만료되었습니다. 다시 로그인해 주세요.\"}";
                     return exchange.getResponse().writeWith(Mono.just(exchange.getResponse().bufferFactory().wrap(responseMessage.getBytes())));
                 }
 
