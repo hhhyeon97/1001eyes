@@ -1,4 +1,4 @@
-rootProject.name = 'myshop'
+rootProject.name = 'discovery-server'
 
 include(
         "user-service", "product-service", "order-service",
