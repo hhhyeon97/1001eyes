@@ -1,4 +1,5 @@
-package com.demo.productservice.client;
+package com.demo.orderservice.client;
+
 
 import org.springframework.cloud.openfeign.FeignClient;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -9,6 +10,5 @@ public interface UserServiceClient {
 
     @GetMapping("/api/users/test/{text}")
     String getResult(@PathVariable String text);
-
 
 }

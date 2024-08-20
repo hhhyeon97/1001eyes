@@ -1,6 +1,6 @@
-package com.demo.productservice.service;
+package com.demo.orderservice.service;
 
-import com.demo.productservice.client.UserServiceClient;
+import com.demo.orderservice.client.UserServiceClient;
 import org.springframework.stereotype.Service;
 
 @Service
@@ -13,8 +13,7 @@ public class UserService {
     }
 
     public String test(String text) {
-        System.out.println("여기는 유저 서비스이다 !!!");
+        System.out.println("여기는 유저 서비스이다 !!!(오더모듈에있는 유저서비스)");
         return userServiceClient.getResult(text);
     }
-
 }

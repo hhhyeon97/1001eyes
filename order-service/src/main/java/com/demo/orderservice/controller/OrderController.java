@@ -1,19 +1,10 @@
 package com.demo.orderservice.controller;
 
-import com.demo.myshop.dto.CreateOrderDto;
-import com.demo.myshop.dto.OrderDto;
-import com.demo.myshop.model.Order;
-import com.demo.myshop.security.UserDetailsImpl;
-import com.demo.myshop.service.OrderService;
-import com.demo.orderservice.dto.CreateOrderDto;
-import com.demo.orderservice.dto.OrderDto;
-import com.demo.orderservice.model.Order;
 import com.demo.orderservice.service.OrderService;
-import org.springframework.http.ResponseEntity;
-import org.springframework.security.core.annotation.AuthenticationPrincipal;
-import org.springframework.web.bind.annotation.*;
-
-import java.util.List;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
 
 @RestController
 @RequestMapping("/api/orders")
@@ -25,7 +16,14 @@ public class OrderController {
         this.orderService = orderService;
     }
 
-    @GetMapping
+    // test
+    @GetMapping("/aaa/{text}")
+    public String test(@PathVariable String text) {
+        System.out.println("여기는 오더 컨트롤러 !!");
+        return orderService.test(text);
+    }
+
+   /* @GetMapping
     public ResponseEntity<List<OrderDto>> getOrders(@AuthenticationPrincipal UserDetailsImpl userDetails) {
         Long userId = userDetails.getUser().getId();
         List<OrderDto> orders = orderService.getOrdersByUserAsDto(userId);
@@ -62,5 +60,5 @@ public class OrderController {
         } catch (Exception e) {
             return ResponseEntity.badRequest().body(e.getMessage());
         }
-    }
+    }*/
 }

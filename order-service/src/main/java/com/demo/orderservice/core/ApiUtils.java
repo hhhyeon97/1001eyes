@@ -1,5 +1,4 @@
 package com.demo.orderservice.core;
-//package com.demo.myshop.core.utils;
 
 import lombok.AllArgsConstructor;
 import lombok.Getter;

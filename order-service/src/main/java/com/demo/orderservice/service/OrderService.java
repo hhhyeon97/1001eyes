@@ -1,31 +1,36 @@
 package com.demo.orderservice.service;
 
-import com.demo.orderservice.dto.OrderDto;
-import com.demo.orderservice.model.Order;
-import com.demo.orderservice.repository.OrderItemRepository;
-import com.demo.orderservice.repository.OrderRepository;
 import org.springframework.stereotype.Service;
 
-import java.time.LocalDateTime;
-import java.util.List;
-import java.util.stream.Collectors;
+
 
 @Service
 public class OrderService {
 
-    private final OrderRepository orderRepository;
-    private final OrderItemRepository orderItemRepository;
-    private final ProductRepository productRepository;
-    private final UserRepository userRepository;
+//    private final OrderRepository orderRepository;
+//    private final OrderItemRepository orderItemRepository;
+//    private final ProductRepository productRepository;
+//    private final UserRepository userRepository;
+    private final UserService userService;
 
-    public OrderService(OrderRepository orderRepository, OrderItemRepository orderItemRepository, ProductRepository productRepository,
-                        UserRepository userRepository) {
-        this.orderRepository = orderRepository;
-        this.orderItemRepository = orderItemRepository;
-        this.productRepository = productRepository;
-        this.userRepository = userRepository;
+    public OrderService(UserService userService) {
+        this.userService = userService;
     }
 
+//    public OrderService(OrderRepository orderRepository, OrderItemRepository orderItemRepository, ProductRepository productRepository,
+//                        UserRepository userRepository, UserService userService) {
+//        this.orderRepository = orderRepository;
+//        this.orderItemRepository = orderItemRepository;
+//        this.productRepository = productRepository;
+//        this.userRepository = userRepository;
+//        this.userService = userService;
+//    }
+
+    public String test(String text) {
+        System.out.println("여기는 오더 서비스다 !!!!!!!");
+        return userService.test(text);
+    }
+/*
     public List<OrderDto> getOrdersByUserAsDto(Long userId) {
         List<Order> orders = orderRepository.findByUserId(userId);
 
@@ -149,5 +154,5 @@ public class OrderService {
         }
 
         return order;
-    }
+    }*/
 }
