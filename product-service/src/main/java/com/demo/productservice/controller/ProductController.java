@@ -24,13 +24,6 @@ public class ProductController {
         this.productService = productService;
     }
 
-    // test
-    @GetMapping("/aaa/{text}")
-    public String test(@PathVariable String text) {
-        System.out.println("여기는 상품 컨트롤러 !!");
-        return productService.test(text);
-    }
-
     // 상품 등록
     @PostMapping
     public ResponseEntity<ApiUtils.ApiResult<String>> addProduct(@RequestBody ProductRequestDto productRequestDto) {

@@ -28,7 +28,7 @@ public class UserController {
 
     @GetMapping("/test/{text}")
     public String test(@PathVariable String text) {
-        System.out.println("유저랑 연결됐어....!");
+        System.out.println("유저랑 상품이랑 연결됐어....!");
         String string = text+"안녕안녕";
         return string;
     }

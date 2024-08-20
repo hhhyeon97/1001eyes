@@ -1,7 +1,16 @@
 package com.demo.orderservice.service;
 
+import com.demo.orderservice.client.ProductServiceClient;
+import com.demo.orderservice.dto.OrderDto;
+import com.demo.orderservice.dto.OrderItemDto;
+import com.demo.orderservice.dto.ProductResponseDto;
+import com.demo.orderservice.model.Order;
+import com.demo.orderservice.repository.OrderItemRepository;
+import com.demo.orderservice.repository.OrderRepository;
 import org.springframework.stereotype.Service;
 
+import java.util.List;
+import java.util.stream.Collectors;
 
 
 @Service
@@ -9,29 +18,25 @@ public class OrderService {
 
 //    private final OrderRepository orderRepository;
 //    private final OrderItemRepository orderItemRepository;
-//    private final ProductRepository productRepository;
-//    private final UserRepository userRepository;
-    private final UserService userService;
-
-    public OrderService(UserService userService) {
-        this.userService = userService;
-    }
-
-//    public OrderService(OrderRepository orderRepository, OrderItemRepository orderItemRepository, ProductRepository productRepository,
-//                        UserRepository userRepository, UserService userService) {
+////    private final ProductRepository productRepository;
+////    private final UserRepository userRepository;
+//
+//
+//
+//    public OrderService(OrderRepository orderRepository, OrderItemRepository orderItemRepository) {
 //        this.orderRepository = orderRepository;
 //        this.orderItemRepository = orderItemRepository;
-//        this.productRepository = productRepository;
-//        this.userRepository = userRepository;
-//        this.userService = userService;
 //    }
 
-    public String test(String text) {
-        System.out.println("여기는 오더 서비스다 !!!!!!!");
-        return userService.test(text);
+    private final OrderRepository orderRepository;
+    private final ProductServiceClient productClient;
+
+    public OrderService(OrderRepository orderRepository, ProductServiceClient productClient) {
+        this.orderRepository = orderRepository;
+        this.productClient = productClient;
     }
-/*
-    public List<OrderDto> getOrdersByUserAsDto(Long userId) {
+
+   /* public List<OrderDto> getOrdersByUserAsDto(Long userId) {
         List<Order> orders = orderRepository.findByUserId(userId);
 
         return orders.stream().map(order -> {
@@ -51,11 +56,44 @@ public class OrderService {
                 itemDto.setPrice(item.getPrice());
                 return itemDto;
             }).collect(Collectors.toList());
-
             orderDto.setItems(items);
             return orderDto;
         }).collect(Collectors.toList());
     }
+*/
+   public List<OrderDto> getOrdersByUserAsDto(String userId) {
+       List<Order> orders = orderRepository.findByUserId(userId);
+
+       return orders.stream().map(order -> {
+           OrderDto orderDto = new OrderDto();
+           orderDto.setId(order.getId());
+           orderDto.setOrderDate(order.getOrderDate());
+           orderDto.setDeliveryDate(order.getDeliveryDate());
+           orderDto.setTotalPrice(order.getTotalPrice());
+           orderDto.setStatus(order.getStatus());
+
+           // OrderItemDto 변환 및 설정
+           List<OrderItemDto> items = order.getItems().stream().map(item -> {
+               OrderItemDto itemDto = new OrderItemDto();
+               itemDto.setProductId(item.getProductId());
+               itemDto.setQuantity(item.getQuantity());
+               itemDto.setPrice(item.getPrice());
+
+               // Feign Client를 통해 상품 정보를 가져옵니다.
+               ProductResponseDto productDto = productClient.getProductById(item.getProductId());
+
+               if (productDto != null) {
+                   itemDto.setProductName(productDto.getTitle());
+               }
+               return itemDto;
+           }).collect(Collectors.toList());
+           orderDto.setItems(items);
+           return orderDto;
+       }).collect(Collectors.toList());
+   }
+
+/*
+
 
     // 주문 취소 메서드
     public void cancelOrder(Long orderId) {
