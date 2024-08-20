@@ -26,21 +26,28 @@ public class UserController {
         this.jwtUtil = jwtUtil;
     }
 
-    // todo : test !!!
-    @GetMapping("/health")
-    public String health(HttpServletRequest request) {
-        int port = request.getServerPort();
-        log.info("port = {}", port);
-        return String.format("[Member Service] port = %d", request.getServerPort());
+    @GetMapping("/test/{text}")
+    public String test(@PathVariable String text) {
+        System.out.println("유저랑 연결됐어....!");
+        String string = text+"안녕안녕";
+        return string;
     }
 
-    @PostMapping("/logout")
-    public ResponseEntity<String> logout(HttpServletResponse response) {
-        // JWT 쿠키 삭제
-        jwtUtil.removeJwtCookie(response);
-        // 로그아웃 성공 메시지 반환
-        return ResponseEntity.ok("로그아웃 성공: 쿠키가 삭제되었습니다.");
-    }
+    // todo : test !!!
+//    @GetMapping("/health")
+//    public String health(HttpServletRequest request) {
+//        int port = request.getServerPort();
+//        log.info("port = {}", port);
+//        return String.format("[Member Service] port = %d", request.getServerPort());
+//    }
+
+//    @PostMapping("/logout")
+//    public ResponseEntity<String> logout(HttpServletResponse response) {
+//        // JWT 쿠키 삭제
+//        jwtUtil.removeJwtCookie(response);
+//        // 로그아웃 성공 메시지 반환
+//        return ResponseEntity.ok("로그아웃 성공: 쿠키가 삭제되었습니다.");
+//    }
 
     // 이메일 인증 코드 전송
     @PostMapping("/send")

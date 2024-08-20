@@ -1,11 +1,9 @@
 package com.demo.orderservice.service;
 
-import com.demo.myshop.dto.OrderDto;
-import com.demo.myshop.dto.OrderItemDto;
-import com.demo.myshop.repository.OrderItemRepository;
-import com.demo.myshop.repository.OrderRepository;
-import com.demo.myshop.repository.ProductRepository;
-import com.demo.myshop.repository.UserRepository;
+import com.demo.orderservice.dto.OrderDto;
+import com.demo.orderservice.model.Order;
+import com.demo.orderservice.repository.OrderItemRepository;
+import com.demo.orderservice.repository.OrderRepository;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;

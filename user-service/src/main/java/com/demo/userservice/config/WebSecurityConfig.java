@@ -1,7 +1,6 @@
 package com.demo.userservice.config;
 
 import com.demo.userservice.core.jwt.JwtAuthenticationFilter;
-import com.demo.userservice.core.jwt.JwtAuthorizationFilter;
 import com.demo.userservice.core.jwt.JwtUtil;
 import com.demo.userservice.security.CustomLogoutSuccessHandler;
 import com.demo.userservice.security.UserDetailsServiceImpl;
@@ -42,10 +41,10 @@ public class WebSecurityConfig {
         return filter;
     }
 
-    @Bean
-    public JwtAuthorizationFilter jwtAuthorizationFilter() {
-        return new JwtAuthorizationFilter(jwtUtil, userDetailsService);
-    }
+//    @Bean
+//    public JwtAuthorizationFilter jwtAuthorizationFilter() {
+//        return new JwtAuthorizationFilter(jwtUtil, userDetailsService);
+//    }
 
     @Bean
     public CustomLogoutSuccessHandler logoutSuccessHandler() {
@@ -74,13 +73,13 @@ public class WebSecurityConfig {
                 logout
                         .logoutUrl("/api/users/logout") // 로그아웃 요청 URL
                         .deleteCookies("Authorization") // 쿠키 삭제
-                        .invalidateHttpSession(true) // 세션 무효화 (세션을 사용하는 경우)
+//                        .invalidateHttpSession(true) // 세션 무효화 (세션을 사용하는 경우)
                         .logoutSuccessHandler(logoutSuccessHandler()) // 로그아웃 성공 핸들러 설정
                         .permitAll()
         );
 
         // 필터 관리
-        http.addFilterBefore(jwtAuthorizationFilter(), JwtAuthenticationFilter.class);
+//        http.addFilterBefore(jwtAuthorizationFilter(), JwtAuthenticationFilter.class);
         http.addFilterBefore(jwtAuthenticationFilter(), UsernamePasswordAuthenticationFilter.class);
 
         return http.build();

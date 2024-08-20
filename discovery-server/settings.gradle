@@ -1,1 +1,6 @@
 rootProject.name = 'discovery-server'
+
+include(
+        "user-service", "product-service", "order-service",
+        "discovery-server", "api-gateway", "common"
+)
