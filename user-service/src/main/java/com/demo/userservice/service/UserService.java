@@ -13,6 +13,7 @@ import com.demo.userservice.repository.UserRepository;
 import com.demo.userservice.repository.VerificationTokenRepository;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.Valid;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.mail.SimpleMailMessage;
 import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
@@ -24,6 +25,7 @@ import java.time.LocalDateTime;
 import java.util.Optional;
 
 @Service
+@Slf4j(topic = "유저 서비스 !!!")
 public class UserService {
 
     private final UserRepository userRepository;
@@ -74,26 +76,34 @@ public class UserService {
         // 기존 인증 토큰이 있는지 확인
         VerificationToken existingToken = verificationTokenRepository.findByEmail(encryptedEmail).orElse(null);
 
+        log.info("================= 기존 인증 토큰 있는지 ");
+
+
         if (existingToken != null) {
+            log.info("================= 기존 인증 토큰 있는지 22222222222");
             // 기존 인증 토큰이 있고, 인증되지 않은 경우 새로운 인증 코드로 업데이트
             if (!existingToken.isVerified()) {
                 existingToken.setVerificationCode(verificationCode);
                 existingToken.setExpiryDate(expiryDate);
                 verificationTokenRepository.save(existingToken);
+                log.info("================= 333333333333333333");
             } else {
                 throw new IllegalArgumentException("이미 인증된 이메일입니다.");
             }
         } else {
             // 새 인증 토큰 생성
+            log.info("================555555");
             VerificationToken token = new VerificationToken(encryptedEmail, verificationCode, expiryDate);
             verificationTokenRepository.save(token);
         }
-
+        log.info("================666666");
         // 이메일 전송
         String subject = "Your Verification Code";
         String text = "Your verification code is: " + verificationCode;
         sendEmail(email, subject, text);
     }
+
+
 
     // 이메일 인증 처리
     public String verifyEmail(String email, String verificationCode) {

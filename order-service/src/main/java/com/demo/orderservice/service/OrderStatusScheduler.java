@@ -6,6 +6,7 @@
 //import com.demo.myshop.model.Product;
 //import com.demo.myshop.repository.OrderRepository;
 //import com.demo.myshop.repository.ProductRepository;
+//import com.demo.orderservice.repository.OrderRepository;
 //import lombok.extern.slf4j.Slf4j;
 //import org.springframework.scheduling.annotation.Scheduled;
 //import org.springframework.stereotype.Component;
