@@ -9,7 +9,6 @@ import com.demo.productservice.model.Product;
 import com.demo.productservice.service.ProductService;
 import com.demo.productservice.service.UserService;
 import org.springframework.http.ResponseEntity;
-import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -21,19 +20,8 @@ import java.util.stream.Collectors;
 public class ProductController {
 
     private final ProductService productService;
-    private final UserServiceClient userServiceClient;
-    private final UserService userService;
-    public ProductController(ProductService productService, UserServiceClient userServiceClient, UserService userService) {
+    public ProductController(ProductService productService) {
         this.productService = productService;
-        this.userServiceClient = userServiceClient;
-        this.userService = userService;
-    }
-
-    // test
-    @GetMapping("/aaa/{text}")
-    public String test(@PathVariable String text) {
-        System.out.println("여기는 상품 컨트롤러 !!");
-        return productService.test(text);
     }
 
     // 상품 등록
