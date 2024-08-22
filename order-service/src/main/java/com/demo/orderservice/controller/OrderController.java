@@ -28,12 +28,22 @@ public class OrderController {
 //        return ResponseEntity.ok(orders);
 //    }
 
-    // 수정 코드
+    // 수정 코드 - 주문 조회
     @GetMapping
     public ResponseEntity<List<OrderDto>> getOrders(@RequestHeader("X-Auth-User-ID") String userId) {
         List<OrderDto> orders = orderService.getOrdersByUserAsDto(userId);
         return ResponseEntity.ok(orders);
     }
+
+//    @PostMapping("/cancel")
+//    public ResponseEntity<String> cancelOrder(@RequestParam Long orderId) {
+//        try{
+//            orderService.cancelOrder(orderId);
+//            return ResponseEntity.ok("주문 취소 완료");
+//        }catch(Exception e){
+//            return ResponseEntity.badRequest().body(e.getMessage());
+//        }
+//    }
 
     //    @PostMapping("/cancel")
 //    public ResponseEntity<String> cancelOrder(@RequestParam Long orderId) {
@@ -79,10 +89,9 @@ public class OrderController {
             createdOrderDto.setTotalPrice(order.getTotalPrice());
             createdOrderDto.setStatus(order.getStatus());
             createdOrderDto.setItems(orderDto.getItems()); // OrderItemDto 리스트 설정
-
             return ResponseEntity.ok(createdOrderDto);
         } catch (Exception e) {
-            e.printStackTrace();
+//            e.printStackTrace();
             return ResponseEntity.badRequest().body(null);
         }
     }

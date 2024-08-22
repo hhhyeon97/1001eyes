@@ -9,7 +9,7 @@ import java.util.List;
 @Setter
 public class CartDto {
     private Long id;
-    private Long userId;
+    private String userId;
     private Integer totalPrice;
     private List<CartItemDto> items;
 }

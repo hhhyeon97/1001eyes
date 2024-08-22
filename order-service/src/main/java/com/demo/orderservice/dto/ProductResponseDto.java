@@ -14,5 +14,4 @@ public class ProductResponseDto {
     private Integer price;
     private Integer stock;
     private String imageUrl;
-
 }

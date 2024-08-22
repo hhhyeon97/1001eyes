@@ -1,8 +1,10 @@
 package com.demo.userservice.service;
 
 
+import com.demo.userservice.client.CartServiceClient;
 import com.demo.userservice.core.EncryptionUtils;
 import com.demo.userservice.core.jwt.JwtUtil;
+import com.demo.userservice.dto.CartCreateRequestDto;
 import com.demo.userservice.dto.RegisterRequestDto;
 import com.demo.userservice.model.Address;
 import com.demo.userservice.model.User;
@@ -34,10 +36,11 @@ public class UserService {
     private final AddressRepository addressRepository;
     private final JwtUtil jwtUtil;
 //    private final CartRepository cartRepository;
+    private final CartServiceClient cartServiceClient;
     private final VerificationTokenRepository verificationTokenRepository;
 
     public UserService(UserRepository userRepository, PasswordEncoder passwordEncoder, JavaMailSender mailSender, JwtUtil jwtUtil,
-                       AddressRepository addressRepository,
+                       AddressRepository addressRepository,  CartServiceClient cartServiceClient,
                        VerificationTokenRepository verificationTokenRepository) {
         this.userRepository = userRepository;
         this.passwordEncoder = passwordEncoder;
@@ -45,7 +48,9 @@ public class UserService {
         this.addressRepository = addressRepository;
         this.jwtUtil = jwtUtil;
 //        this.cartRepository = cartRepository;
+        this.cartServiceClient = cartServiceClient;
         this.verificationTokenRepository = verificationTokenRepository;
+
     }
 
     // 관리자 인증 토큰
@@ -199,12 +204,6 @@ public class UserService {
         // 사용자 등록
         User user = new User(username, password, encryptedEmail, encryptedPhone, encryptedName, role);
         userRepository.save(user);
-
-        // todo : cart 연결 필요
-      /*  // 장바구니 생성
-        Cart cart = new Cart();
-        cart.setUser(user);
-        cartRepository.save(cart);*/
 
         // Address 등록
         Address address = new Address(encryptedAddress, encryptedAddressDetail, encryptedZipcode,

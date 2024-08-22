@@ -2,8 +2,10 @@ package com.demo.productservice.dto;
 
 import com.demo.productservice.model.Product;
 import lombok.Getter;
+import lombok.Setter;
 
 @Getter
+@Setter
 public class ProductResponseDto {
     private final Long id;
     private final String title;
