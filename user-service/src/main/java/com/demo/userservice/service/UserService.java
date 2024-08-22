@@ -35,7 +35,7 @@ public class UserService {
     private final JwtUtil jwtUtil;
     private final VerificationTokenRepository verificationTokenRepository;
 
-    // todo : 관리자 인증 토큰 -> 추후 환경 변수로 빼기 
+    // todo : 관리자 인증 토큰 -> 추후 환경 변수로 빼기
     private final String ADMIN_TOKEN = "AAABnvxRVklrnYxKZ0aHgTBcXukeZygoC";
 
     public UserService(UserRepository userRepository, PasswordEncoder passwordEncoder, JavaMailSender mailSender, JwtUtil jwtUtil,
@@ -122,20 +122,13 @@ public class UserService {
     public void join(@Valid RegisterRequestDto requestDto) {
         String email = requestDto.getEmail();
         String encryptedEmail;
+        String username = requestDto.getUsername();
+
         try {
             encryptedEmail = EncryptionUtils.encrypt(email);
         } catch (Exception e) {
             throw new RuntimeException("이메일 암호화 실패", e);
         }
-
-        VerificationToken token = verificationTokenRepository.findByEmail(encryptedEmail)
-                .orElseThrow(() -> new IllegalArgumentException("이메일 인증을 먼저 진행해 주세요."));
-        if (!token.isVerified()) {
-            throw new IllegalArgumentException("이메일 인증이 완료되지 않았습니다.");
-        }
-
-        String username = requestDto.getUsername();
-        String password = passwordEncoder.encode(requestDto.getPassword());
 
         // 중복 아이디 확인
         Optional<User> checkUsername = userRepository.findByUsername(username);
@@ -149,6 +142,13 @@ public class UserService {
             throw new IllegalArgumentException("중복된 이메일이 존재합니다.");
         }
 
+        VerificationToken token = verificationTokenRepository.findByEmail(encryptedEmail)
+                .orElseThrow(() -> new IllegalArgumentException("이메일 인증을 먼저 진행해 주세요."));
+        if (!token.isVerified()) {
+            throw new IllegalArgumentException("이메일 인증이 완료되지 않았습니다.");
+        }
+
+        String password = passwordEncoder.encode(requestDto.getPassword());
         String phone = requestDto.getPhone();
         String name = requestDto.getName();
 
