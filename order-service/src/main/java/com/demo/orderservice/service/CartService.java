@@ -1,7 +1,6 @@
 package com.demo.orderservice.service;
 
 import com.demo.orderservice.client.ProductServiceClient;
-import com.demo.orderservice.dto.CartCreateRequestDto;
 import com.demo.orderservice.dto.ProductResponseDto;
 import com.demo.orderservice.model.Cart;
 import com.demo.orderservice.model.CartItem;
@@ -27,17 +26,22 @@ public class CartService {
         this.productServiceClient = productServiceClient;
     }
 
-//    public void createCart(CartCreateRequestDto cartRequestDto) {
-//        log.info("유저서비스랑 소통해서 카트 생성한다 !!!!!!");
-//        Cart cart = new Cart();
-//        cart.setUserId(cartRequestDto.getUserId());
-//        cartRepository.save(cart);
+//    public List<CartItem> getCartItems(String userId) {
+//        Cart cart = cartRepository.findByUserId(userId)
+//                .orElseThrow(() -> new RuntimeException("장바구니 정보를 찾을 수 없습니다."));
+//        return List.copyOf(cart.getItems());
 //    }
 
-    public List<CartItem> getCartItems(String userId) {
-        Cart cart = cartRepository.findByUserId(userId)
-                .orElseThrow(() -> new RuntimeException("장바구니 정보를 찾을 수 없습니다."));
-        return List.copyOf(cart.getItems());
+
+    public Cart getOrCreateCart(String userId) {
+        // 사용자 ID로 카트 조회 또는 새 카트 생성
+        return cartRepository.findByUserId(userId)
+                .orElseGet(() -> {
+                    Cart newCart = new Cart();
+                    newCart.setUserId(userId);
+                    newCart.setTotalPrice(0);
+                    return cartRepository.save(newCart);
+                });
     }
 
     public void addItemToCart(String userId, Long productId, Integer quantity) {

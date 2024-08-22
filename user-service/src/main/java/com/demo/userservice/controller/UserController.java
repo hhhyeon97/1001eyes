@@ -1,6 +1,5 @@
 package com.demo.userservice.controller;
 
-import com.demo.userservice.core.ApiUtils;
 import com.demo.userservice.dto.ChangePasswordRequestDto;
 import com.demo.userservice.dto.RegisterRequestDto;
 import com.demo.userservice.service.UserService;
@@ -24,14 +23,14 @@ public class UserController {
 
     // 이메일 인증 코드 전송
     @PostMapping("/send")
-    public ResponseEntity<ApiUtils.ApiResult<String>> sendVerificationCode(@RequestParam String email) {
+    public ResponseEntity<String> sendVerificationCode(@RequestParam String email) {
         try {
             userService.sendVerificationCode(email);
-            return ResponseEntity.ok(ApiUtils.success("인증 코드가 이메일로 발송되었습니다."));
+            return ResponseEntity.ok("인증 코드가 이메일로 발송되었습니다.");
         } catch (IllegalArgumentException e) {
-            return ResponseEntity.badRequest().body(ApiUtils.error(e.getMessage()));
+            return ResponseEntity.badRequest().body(e.getMessage());
         } catch (Exception e) {
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(ApiUtils.error(e.getMessage()));
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(e.getMessage());
         }
     }
 
@@ -48,24 +47,24 @@ public class UserController {
 
     // 회원가입
     @PostMapping("/register")
-    public ResponseEntity<ApiUtils.ApiResult<String>> register(@Valid @RequestBody RegisterRequestDto requestDto) {
+    public ResponseEntity<String> register(@Valid @RequestBody RegisterRequestDto requestDto) {
         try {
             userService.join(requestDto);
-            return ResponseEntity.ok(ApiUtils.success("회원가입이 완료되었습니다."));
+            return ResponseEntity.ok("회원가입이 완료되었습니다.");
         } catch (IllegalArgumentException e) {
-            return ResponseEntity.badRequest().body(ApiUtils.error(e.getMessage()));
+            return ResponseEntity.badRequest().body(e.getMessage());
         }
     }
 
     // 비밀번호 재설정
     @PutMapping("/change-password")
-    public ResponseEntity<ApiUtils.ApiResult<String>> changePassword(@RequestBody ChangePasswordRequestDto requestDto,
-                                                                     HttpServletResponse httpServletResponse) {
+    public ResponseEntity<String> changePassword(@RequestBody ChangePasswordRequestDto requestDto,
+                                                 HttpServletResponse httpServletResponse) {
         try {
             userService.changePassword(requestDto.getUsername(), requestDto.getOldPassword(), requestDto.getNewPassword(), httpServletResponse);
-            return ResponseEntity.ok(ApiUtils.success("비밀번호가 업데이트 되었습니다. 로그인 후 이용해 주세요."));
+            return ResponseEntity.ok("비밀번호가 업데이트 되었습니다. 로그인 후 이용해 주세요.");
         } catch (Exception e) {
-            return ResponseEntity.badRequest().body(ApiUtils.error(e.getMessage()));
+            return ResponseEntity.badRequest().body(e.getMessage());
         }
     }
 
