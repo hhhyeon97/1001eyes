@@ -9,6 +9,7 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.Valid;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -33,22 +34,6 @@ public class UserController {
         return string;
     }
 
-    // todo : test !!!
-//    @GetMapping("/health")
-//    public String health(HttpServletRequest request) {
-//        int port = request.getServerPort();
-//        log.info("port = {}", port);
-//        return String.format("[Member Service] port = %d", request.getServerPort());
-//    }
-
-//    @PostMapping("/logout")
-//    public ResponseEntity<String> logout(HttpServletResponse response) {
-//        // JWT 쿠키 삭제
-//        jwtUtil.removeJwtCookie(response);
-//        // 로그아웃 성공 메시지 반환
-//        return ResponseEntity.ok("로그아웃 성공: 쿠키가 삭제되었습니다.");
-//    }
-
     // 이메일 인증 코드 전송
     @PostMapping("/send")
     public ResponseEntity<ApiUtils.ApiResult<String>> sendVerificationCode(@RequestParam String email) {
@@ -58,9 +43,21 @@ public class UserController {
         } catch (IllegalArgumentException e) {
             return ResponseEntity.badRequest().body(ApiUtils.error(e.getMessage()));
         } catch (Exception e) {
+//            e.printStackTrace();
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(ApiUtils.error(e.getMessage()));
         }
     }
+
+//    @Value("${spring.mail.username}")
+//    private String username;
+//    @Value("${spring.mail.password}")
+//    private String password;
+//
+//    public void init() {
+//        System.out.println("Loaded username: " + username);
+//        System.out.println("Loaded password: " + password);
+//    }
+
 
     @PostMapping("/verify")
     public ResponseEntity<String> verifyEmail(@RequestParam String email, @RequestParam String verificationCode) {
