@@ -1,6 +1,7 @@
 package com.demo.productservice.service;
 
 import com.demo.productservice.dto.ProductRequestDto;
+import com.demo.productservice.dto.ProductResponseDto;
 import com.demo.productservice.model.Product;
 import com.demo.productservice.repository.ProductRepository;
 import org.springframework.http.ResponseEntity;
@@ -38,10 +39,23 @@ public class ProductService {
 
 
 
+
+
     public String test(String text) {
         System.out.println("여기는 상품 서비스다 !!!!!!!");
         return userService.test(text);
     }
 
+    // 오더 주문 취소시 재고 업데이트할 때 쓸 새로운 상품 엔티티 저장 메서드
+    // todo : 이거 위에 상품 등록 메서드랑 중복되는것같음 ?!,,일단 돌아가게만 먼저 해보기
+//
+//    public void saveProduct2(ProductRequestDto productRequestDto) {
+//        Product product = productRequestDto.toProduct();
+//        productRepository.save(product);
+//    }
+    // 상품 저장 메서드 (Product 엔티티를 직접 저장)
+    public void saveProduct(Product product) {
+        productRepository.save(product);
+    }
 
 }

@@ -20,18 +20,6 @@ import java.util.stream.Collectors;
 @Slf4j(topic = "오더 서비스다 !!")
 public class OrderService {
 
-//    private final OrderRepository orderRepository;
-//    private final OrderItemRepository orderItemRepository;
-////    private final ProductRepository productRepository;
-////    private final UserRepository userRepository;
-//
-//
-//
-//    public OrderService(OrderRepository orderRepository, OrderItemRepository orderItemRepository) {
-//        this.orderRepository = orderRepository;
-//        this.orderItemRepository = orderItemRepository;
-//    }
-
     private final OrderRepository orderRepository;
     private final ProductServiceClient productClient;
 
@@ -40,31 +28,7 @@ public class OrderService {
         this.productClient = productClient;
     }
 
-    /* public List<OrderDto> getOrdersByUserAsDto(Long userId) {
-         List<Order> orders = orderRepository.findByUserId(userId);
-
-         return orders.stream().map(order -> {
-             OrderDto orderDto = new OrderDto();
-             orderDto.setId(order.getId());
-             orderDto.setOrderDate(order.getOrderDate());
-             orderDto.setDeliveryDate(order.getDeliveryDate());
-             orderDto.setTotalPrice(order.getTotalPrice());
-             orderDto.setStatus(order.getStatus());
-
-             // OrderItemDto 변환 및 설정
-             List<OrderItemDto> items = order.getItems().stream().map(item -> {
-                 OrderItemDto itemDto = new OrderItemDto();
-                 itemDto.setProductId(item.getProduct().getId());
-                 itemDto.setProductName(item.getProduct().getTitle());
-                 itemDto.setQuantity(item.getQuantity());
-                 itemDto.setPrice(item.getPrice());
-                 return itemDto;
-             }).collect(Collectors.toList());
-             orderDto.setItems(items);
-             return orderDto;
-         }).collect(Collectors.toList());
-     }
- */
+    // 주문 조회
     public List<OrderDto> getOrdersByUserAsDto(String userId) {
         List<Order> orders = orderRepository.findByUserId(userId);
 
@@ -88,7 +52,9 @@ public class OrderService {
 
                 if (productDto != null) {
                     itemDto.setProductName(productDto.getTitle());
+                    itemDto.setPrice(productDto.getPrice());
                 }
+
                 return itemDto;
             }).collect(Collectors.toList());
             orderDto.setItems(items);
@@ -96,30 +62,35 @@ public class OrderService {
         }).collect(Collectors.toList());
     }
 
-    /*
+    // 주문 취소
+    public void cancelOrder(Long orderId) {
+        Order order = orderRepository.findById(orderId)
+                .orElseThrow(() -> new RuntimeException("해당하는 주문 정보가 없습니다."));
 
-
-        // 주문 취소 메서드
-        public void cancelOrder(Long orderId) {
-            Order order = orderRepository.findById(orderId)
-                    .orElseThrow(() -> new RuntimeException("해당하는 주문 정보가 없습니다."));
-
-            // 상태가 '배송중' 이상인 경우 취소 불가
-            if (order.getStatus() != OrderStatus.PENDING) {
-                throw new RuntimeException("이미 배송 중이거나 배달 중이므로 주문을 취소할 수 없습니다.");
-            }
-
-            // 재고 복구
-            for (OrderItem item : order.getItems()) {
-                Product product = item.getProduct();
-                product.setStock(product.getStock() + item.getQuantity());
-                productRepository.save(product);
-            }
-
-            // 주문 상태를 '취소됨'으로 변경
-            order.setStatus(OrderStatus.CANCELED);
-            orderRepository.save(order);
+        // 상태가 '배송중' 이상인 경우 취소 불가
+        if (order.getStatus() != OrderStatus.PENDING) {
+            throw new RuntimeException("이미 배송 중이거나 배달 중이므로 주문을 취소할 수 없습니다.");
         }
+
+        // 재고 복구
+        for (OrderItem item : order.getItems()) {
+            ProductResponseDto productDto = productClient.getProductById(item.getProductId()).getMessage();
+
+            if (productDto != null) {
+                productDto.setStock(productDto.getStock() + item.getQuantity());
+                productClient.updateProductStock(productDto.getId(), productDto);
+            } else {
+                throw new RuntimeException("상품 정보를 가져올 수 없습니다.");
+            }
+        }
+
+        // 주문 상태를 '취소됨'으로 변경
+        order.setStatus(OrderStatus.CANCELED);
+        orderRepository.save(order);
+    }
+
+
+    /*
 
         // 반품 요청
         public void requestReturn(Long orderId) {

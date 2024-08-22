@@ -56,4 +56,18 @@ public class ProductController {
         }
     }
 
+    // 상품 재고 업데이트
+    @PutMapping("/{id}/stock")
+    public ResponseEntity<ApiUtils.ApiResult<String>> updateProductStock(@PathVariable("id") Long id, @RequestBody ProductResponseDto productDto) {
+        Optional<Product> result = productService.findItemById(id);
+        if (result.isPresent()) {
+            Product product = result.get();
+            product.setStock(productDto.getStock()); // 재고를 업데이트
+            productService.saveProduct(product); // 저장
+            return ResponseEntity.ok(ApiUtils.success("재고 업데이트 완료!"));
+        } else {
+            return ResponseEntity.status(404).body(ApiUtils.error("해당 상품을 찾을 수 없습니다."));
+        }
+    }
+
 }

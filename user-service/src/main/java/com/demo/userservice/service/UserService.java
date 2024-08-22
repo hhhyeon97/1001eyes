@@ -1,8 +1,10 @@
 package com.demo.userservice.service;
 
 
+import com.demo.userservice.client.CartServiceClient;
 import com.demo.userservice.core.EncryptionUtils;
 import com.demo.userservice.core.jwt.JwtUtil;
+import com.demo.userservice.dto.CartCreateRequestDto;
 import com.demo.userservice.dto.RegisterRequestDto;
 import com.demo.userservice.model.Address;
 import com.demo.userservice.model.User;
@@ -34,10 +36,11 @@ public class UserService {
     private final AddressRepository addressRepository;
     private final JwtUtil jwtUtil;
 //    private final CartRepository cartRepository;
+    private final CartServiceClient cartServiceClient;
     private final VerificationTokenRepository verificationTokenRepository;
 
     public UserService(UserRepository userRepository, PasswordEncoder passwordEncoder, JavaMailSender mailSender, JwtUtil jwtUtil,
-                       AddressRepository addressRepository,
+                       AddressRepository addressRepository,  CartServiceClient cartServiceClient,
                        VerificationTokenRepository verificationTokenRepository) {
         this.userRepository = userRepository;
         this.passwordEncoder = passwordEncoder;
@@ -45,7 +48,9 @@ public class UserService {
         this.addressRepository = addressRepository;
         this.jwtUtil = jwtUtil;
 //        this.cartRepository = cartRepository;
+        this.cartServiceClient = cartServiceClient;
         this.verificationTokenRepository = verificationTokenRepository;
+
     }
 
     // 관리자 인증 토큰
@@ -205,6 +210,13 @@ public class UserService {
         Cart cart = new Cart();
         cart.setUser(user);
         cartRepository.save(cart);*/
+        // 장바구니 생성 부분 - MSA 구조에 맞게 수정
+        try {
+            CartCreateRequestDto cartRequestDto = new CartCreateRequestDto(user.getId()); // 사용자 ID로 장바구니 요청 DTO 생성
+            cartServiceClient.createCart(cartRequestDto); // Feign Client를 통해 Cart 서비스에 장바구니 생성 요청
+        } catch (Exception e) {
+            throw new RuntimeException("장바구니 생성 실패", e);
+        }
 
         // Address 등록
         Address address = new Address(encryptedAddress, encryptedAddressDetail, encryptedZipcode,
