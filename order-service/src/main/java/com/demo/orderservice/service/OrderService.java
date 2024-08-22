@@ -8,6 +8,7 @@ import com.demo.orderservice.model.Order;
 import com.demo.orderservice.model.OrderItem;
 import com.demo.orderservice.model.OrderStatus;
 import com.demo.orderservice.repository.OrderRepository;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
@@ -16,6 +17,7 @@ import java.util.stream.Collectors;
 
 
 @Service
+@Slf4j(topic = "오더 서비스다 !!")
 public class OrderService {
 
 //    private final OrderRepository orderRepository;
@@ -82,7 +84,7 @@ public class OrderService {
                 itemDto.setPrice(item.getPrice());
 
                 // Feign Client를 통해 상품 정보를 가져옵니다.
-                ProductResponseDto productDto = productClient.getProductById(item.getProductId());
+                ProductResponseDto productDto = productClient.getProductById(item.getProductId()).getMessage();
 
                 if (productDto != null) {
                     itemDto.setProductName(productDto.getTitle());
@@ -207,7 +209,7 @@ public class OrderService {
         // 각 주문 아이템에 대해 재고 확인 및 가격 계산
         for (OrderItemDto dto : orderItems) {
             // 상품 정보를 ProductService를 통해 조회
-            ProductResponseDto product = productClient.getProductById(dto.getProductId());
+            ProductResponseDto product = productClient.getProductById(dto.getProductId()).getMessage();
 
             if (product == null) {
                 throw new RuntimeException("해당 상품을 찾을 수 없습니다: " + dto.getProductId());
@@ -220,7 +222,11 @@ public class OrderService {
 
             // 총 가격 계산
             totalPrice += product.getPrice() * dto.getQuantity();
+
+            log.info("=========상품 조회 완료");
         }
+
+        log.info("========오더 객체 생성하려고 시작한다.");
 
         // Order 객체 생성 및 설정
         Order order = new Order();
@@ -228,6 +234,8 @@ public class OrderService {
         order.setStatus(OrderStatus.PENDING);
         order.setOrderDate(LocalDateTime.now());
         order.setTotalPrice(totalPrice);
+        
+        log.info("========오더아이템도 객체 생성하려고 시작한다.");
 
         // OrderItem 생성 및 저장
         for (OrderItemDto dto : orderItems) {
@@ -241,10 +249,9 @@ public class OrderService {
             // Order에 OrderItem 추가
             order.getItems().add(orderItem);
         }
-
+        log.info("========오더 저장하려고 해");
         // 주문 저장
         orderRepository.save(order);
-
         // 주문에 대한 OrderDto 반환 (선택 사항)
         return order;
     }

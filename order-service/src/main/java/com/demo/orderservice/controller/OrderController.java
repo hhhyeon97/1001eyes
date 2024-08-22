@@ -66,7 +66,7 @@ public class OrderController {
 //            return ResponseEntity.badRequest().body(e.getMessage());
 //        }
 //    }
-    // 수정한 주문 생성
+    // 주문 생성
     @PostMapping
     public ResponseEntity<OrderDto> createOrder(@RequestHeader("X-Auth-User-ID") String userId,
                                                 @RequestBody OrderDto orderDto) {
@@ -82,6 +82,7 @@ public class OrderController {
 
             return ResponseEntity.ok(createdOrderDto);
         } catch (Exception e) {
+            e.printStackTrace();
             return ResponseEntity.badRequest().body(null);
         }
     }
