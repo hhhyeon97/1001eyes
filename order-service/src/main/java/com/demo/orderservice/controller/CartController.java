@@ -1,19 +1,16 @@
 package com.demo.orderservice.controller;
 
 
-import com.demo.orderservice.dto.CartCreateRequestDto;
 import com.demo.orderservice.dto.CartDto;
 import com.demo.orderservice.dto.CartItemDto;
-import com.demo.orderservice.dto.OrderDto;
-import com.demo.orderservice.model.CartItem;
+import com.demo.orderservice.model.Cart;
 import com.demo.orderservice.service.CartService;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
-import java.util.Collections;
-import java.util.List;
-
+@Slf4j
 @RestController
 @RequestMapping("/api/carts")
 public class CartController {
@@ -24,41 +21,30 @@ public class CartController {
         this.cartService = cartService;
     }
 
+    // 카트 조회
     @GetMapping
     public ResponseEntity<?> getCart(@RequestHeader("X-Auth-User-ID") String userId) {
         try {
-            List<CartItem> cartItems = cartService.getCartItems(userId);
-
-            if (cartItems.isEmpty()) {
-                // 장바구니가 비어있다면 빈 장바구니 DTO를 반환
-                CartDto emptyCartDto = new CartDto();
-                emptyCartDto.setId(null); // 장바구니 ID 없음
-                emptyCartDto.setUserId(userId);
-                emptyCartDto.setTotalPrice(0); // 총 가격 없음
-                emptyCartDto.setItems(Collections.emptyList()); // 빈 아이템 리스트
-
-                return ResponseEntity.ok(emptyCartDto);
-            } else {
-                // 카트 아이템들을 CartDto로 변환
-                CartDto cartDto = new CartDto();
-                cartDto.setId(cartItems.get(0).getCart().getId());
-                cartDto.setUserId(userId);
-                cartDto.setTotalPrice(cartItems.get(0).getCart().getTotalPrice());
-                cartDto.setItems(cartItems.stream().map(item -> {
-                    CartItemDto itemDto = new CartItemDto();
-                    itemDto.setId(item.getId());
-                    itemDto.setProductId(item.getProductId());
-                    itemDto.setQuantity(item.getQuantity());
-                    return itemDto;
-                }).toList());
-                return ResponseEntity.ok(cartDto);
-            }
+            // 사용자 ID로 카트 조회, 없으면 생성
+            Cart cart = cartService.getOrCreateCart(userId);
+            // 카트 아이템들을 CartDto로 변환
+            CartDto cartDto = new CartDto();
+            cartDto.setId(cart.getId());
+            cartDto.setUserId(userId);
+            cartDto.setTotalPrice(cart.getTotalPrice());
+            cartDto.setItems(cart.getItems().stream().map(item -> {
+                CartItemDto itemDto = new CartItemDto();
+                itemDto.setId(item.getId());
+                itemDto.setProductId(item.getProductId());
+                itemDto.setQuantity(item.getQuantity());
+                return itemDto;
+            }).toList());
+            return ResponseEntity.ok(cartDto);
         } catch (Exception e) {
             // 예외 처리
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("장바구니를 조회하는 중 오류가 발생했습니다.");
         }
     }
-
 
 //    @GetMapping
 //    public ResponseEntity<?> getCart(@RequestHeader("X-Auth-User-ID") String userId) {

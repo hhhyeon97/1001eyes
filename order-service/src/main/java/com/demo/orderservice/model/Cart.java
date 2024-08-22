@@ -19,9 +19,6 @@ public class Cart {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-//    @OneToOne
-//    @JoinColumn(name = "user_id")
-//    private User user;
     private String userId;
 
     private Integer totalPrice = 0; // 총 가격
