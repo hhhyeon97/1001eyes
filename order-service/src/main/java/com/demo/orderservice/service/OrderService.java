@@ -51,7 +51,7 @@ public class OrderService {
                 ProductResponseDto productDto = productClient.getProductById(item.getProductId()).getMessage();
 
                 if (productDto != null) {
-                    itemDto.setProductName(productDto.getTitle());
+//                    itemDto.setProductName(productDto.getTitle());
                     itemDto.setPrice(productDto.getPrice());
                 }
 
@@ -62,32 +62,32 @@ public class OrderService {
         }).collect(Collectors.toList());
     }
 
-    // 주문 취소
-    public void cancelOrder(Long orderId) {
-        Order order = orderRepository.findById(orderId)
-                .orElseThrow(() -> new RuntimeException("해당하는 주문 정보가 없습니다."));
-
-        // 상태가 '배송중' 이상인 경우 취소 불가
-        if (order.getStatus() != OrderStatus.PENDING) {
-            throw new RuntimeException("이미 배송 중이거나 배달 중이므로 주문을 취소할 수 없습니다.");
-        }
-
-        // 재고 복구
-        for (OrderItem item : order.getItems()) {
-            ProductResponseDto productDto = productClient.getProductById(item.getProductId()).getMessage();
-
-            if (productDto != null) {
-                productDto.setStock(productDto.getStock() + item.getQuantity());
-                productClient.updateProductStock(productDto.getId(), productDto);
-            } else {
-                throw new RuntimeException("상품 정보를 가져올 수 없습니다.");
-            }
-        }
-
-        // 주문 상태를 '취소됨'으로 변경
-        order.setStatus(OrderStatus.CANCELED);
-        orderRepository.save(order);
-    }
+//    // 주문 취소
+//    public void cancelOrder(Long orderId) {
+//        Order order = orderRepository.findById(orderId)
+//                .orElseThrow(() -> new RuntimeException("해당하는 주문 정보가 없습니다."));
+//
+//        // 상태가 '배송중' 이상인 경우 취소 불가
+//        if (order.getStatus() != OrderStatus.PENDING) {
+//            throw new RuntimeException("이미 배송 중이거나 배달 중이므로 주문을 취소할 수 없습니다.");
+//        }
+//
+//        // 재고 복구
+//        for (OrderItem item : order.getItems()) {
+//            ProductResponseDto productDto = productClient.getProductById(item.getProductId()).getMessage();
+//
+//            if (productDto != null) {
+//                productDto.setStock(productDto.getStock() + item.getQuantity());
+//                productClient.updateProductStock(productDto.getId(), productDto);
+//            } else {
+//                throw new RuntimeException("상품 정보를 가져올 수 없습니다.");
+//            }
+//        }
+//
+//        // 주문 상태를 '취소됨'으로 변경
+//        order.setStatus(OrderStatus.CANCELED);
+//        orderRepository.save(order);
+//    }
 
 
     /*

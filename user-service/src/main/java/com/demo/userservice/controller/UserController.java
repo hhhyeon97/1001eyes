@@ -1,15 +1,12 @@
 package com.demo.userservice.controller;
 
 import com.demo.userservice.core.ApiUtils;
-import com.demo.userservice.core.jwt.JwtUtil;
 import com.demo.userservice.dto.ChangePasswordRequestDto;
 import com.demo.userservice.dto.RegisterRequestDto;
 import com.demo.userservice.service.UserService;
-import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.Valid;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -20,18 +17,9 @@ import org.springframework.web.bind.annotation.*;
 public class UserController {
 
     private final UserService userService;
-    private final JwtUtil jwtUtil;
 
-    public UserController(UserService userService, JwtUtil jwtUtil) {
+    public UserController(UserService userService) {
         this.userService = userService;
-        this.jwtUtil = jwtUtil;
-    }
-
-    @GetMapping("/test/{text}")
-    public String test(@PathVariable String text) {
-        System.out.println("유저랑 상품이랑 연결됐어....!");
-        String string = text+"안녕안녕";
-        return string;
     }
 
     // 이메일 인증 코드 전송
@@ -43,22 +31,11 @@ public class UserController {
         } catch (IllegalArgumentException e) {
             return ResponseEntity.badRequest().body(ApiUtils.error(e.getMessage()));
         } catch (Exception e) {
-//            e.printStackTrace();
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(ApiUtils.error(e.getMessage()));
         }
     }
 
-//    @Value("${spring.mail.username}")
-//    private String username;
-//    @Value("${spring.mail.password}")
-//    private String password;
-//
-//    public void init() {
-//        System.out.println("Loaded username: " + username);
-//        System.out.println("Loaded password: " + password);
-//    }
-
-
+    // 이메일 인증
     @PostMapping("/verify")
     public ResponseEntity<String> verifyEmail(@RequestParam String email, @RequestParam String verificationCode) {
         try {
@@ -69,6 +46,7 @@ public class UserController {
         }
     }
 
+    // 회원가입
     @PostMapping("/register")
     public ResponseEntity<ApiUtils.ApiResult<String>> register(@Valid @RequestBody RegisterRequestDto requestDto) {
         try {
@@ -79,6 +57,7 @@ public class UserController {
         }
     }
 
+    // 비밀번호 재설정
     @PutMapping("/change-password")
     public ResponseEntity<ApiUtils.ApiResult<String>> changePassword(@RequestBody ChangePasswordRequestDto requestDto,
                                                                      HttpServletResponse httpServletResponse) {

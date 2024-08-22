@@ -205,19 +205,6 @@ public class UserService {
         User user = new User(username, password, encryptedEmail, encryptedPhone, encryptedName, role);
         userRepository.save(user);
 
-        // todo : cart 연결 필요
-      /*  // 장바구니 생성
-        Cart cart = new Cart();
-        cart.setUser(user);
-        cartRepository.save(cart);*/
-        // 장바구니 생성 부분 - MSA 구조에 맞게 수정
-        try {
-            CartCreateRequestDto cartRequestDto = new CartCreateRequestDto(user.getId()); // 사용자 ID로 장바구니 요청 DTO 생성
-            cartServiceClient.createCart(cartRequestDto); // Feign Client를 통해 Cart 서비스에 장바구니 생성 요청
-        } catch (Exception e) {
-            throw new RuntimeException("장바구니 생성 실패", e);
-        }
-
         // Address 등록
         Address address = new Address(encryptedAddress, encryptedAddressDetail, encryptedZipcode,
                 requestDto.isDefault(), requestDto.getAddressMessage(), user);

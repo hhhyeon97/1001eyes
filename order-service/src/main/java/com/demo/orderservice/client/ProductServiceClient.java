@@ -11,10 +11,6 @@ public interface ProductServiceClient {
     @GetMapping("/api/products/{id}")
     ApiUtils.ApiResult<ProductResponseDto> getProductById(@PathVariable("id") Long id);
 
-
-//    @PostMapping("/api/products/{id}/stock")
+//    @PutMapping("/api/products/{id}/stock")
 //    void updateProductStock(@PathVariable("id") Long id, @RequestBody ProductResponseDto productDto);
-
-    @PutMapping("/api/products/{id}/stock") // POST -> PUT으로 변경
-    void updateProductStock(@PathVariable("id") Long id, @RequestBody ProductResponseDto productDto);
 }

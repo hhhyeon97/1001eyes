@@ -35,15 +35,15 @@ public class OrderController {
         return ResponseEntity.ok(orders);
     }
 
-    @PostMapping("/cancel")
-    public ResponseEntity<String> cancelOrder(@RequestParam Long orderId) {
-        try{
-            orderService.cancelOrder(orderId);
-            return ResponseEntity.ok("주문 취소 완료");
-        }catch(Exception e){
-            return ResponseEntity.badRequest().body(e.getMessage());
-        }
-    }
+//    @PostMapping("/cancel")
+//    public ResponseEntity<String> cancelOrder(@RequestParam Long orderId) {
+//        try{
+//            orderService.cancelOrder(orderId);
+//            return ResponseEntity.ok("주문 취소 완료");
+//        }catch(Exception e){
+//            return ResponseEntity.badRequest().body(e.getMessage());
+//        }
+//    }
 
     //    @PostMapping("/cancel")
 //    public ResponseEntity<String> cancelOrder(@RequestParam Long orderId) {
