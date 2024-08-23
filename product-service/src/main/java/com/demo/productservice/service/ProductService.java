@@ -33,4 +33,8 @@ public class ProductService {
         return productRepository.findById(id);
     }
 
+    // 주문 생성 시 재고 업데이트 -> Product 객체를 직접 저장
+    public void saveProduct2(Product product) {
+        productRepository.save(product);
+    }
 }

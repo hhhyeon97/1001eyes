@@ -26,26 +26,29 @@ public class OrderController {
         return ResponseEntity.ok(orders);
     }
 
-//    @PostMapping("/cancel")
-//    public ResponseEntity<String> cancelOrder(@RequestParam Long orderId) {
-//        try{
-//            orderService.cancelOrder(orderId);
-//            return ResponseEntity.ok("주문 취소 완료");
-//        }catch(Exception e){
-//            return ResponseEntity.badRequest().body(e.getMessage());
-//        }
-//    }
+    // 주문 생성
+    @PostMapping
+    public ResponseEntity<String> createOrder(@RequestHeader("X-Auth-User-ID") String userId,
+                                              @RequestBody OrderDto orderDto) {
+        try {
+            Order order = orderService.createOrder(userId, orderDto.getItems());
+            return ResponseEntity.ok("주문 완료 -> 주문번호 : " + order.getId());
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(e.getMessage());
+        }
+    }
 
-    //    @PostMapping("/cancel")
-//    public ResponseEntity<String> cancelOrder(@RequestParam Long orderId) {
-//        try {
-//            orderService.cancelOrder(orderId);
-//            return ResponseEntity.ok("주문 취소 완료");
-//        } catch (Exception e) {
-//            return ResponseEntity.badRequest().body(e.getMessage());
-//        }
-//    }
-//
+    // 주문 취소
+    @PostMapping("/cancel")
+    public ResponseEntity<String> cancelOrder(@RequestParam Long orderId) {
+        try{
+            orderService.cancelOrder(orderId);
+            return ResponseEntity.ok("주문 취소 완료");
+        }catch(Exception e){
+            return ResponseEntity.badRequest().body(e.getMessage());
+        }
+    }
+
 //    @PostMapping("/return")
 //    public ResponseEntity<String> requestReturn(@RequestParam Long orderId) {
 //        try {
@@ -53,37 +56,6 @@ public class OrderController {
 //            return ResponseEntity.ok("반품 요청 완료");
 //        } catch (Exception e) {
 //            return ResponseEntity.badRequest().body(e.getMessage());
-//        }
-//    }
-//     기존 코드
-//    @PostMapping
-//    public ResponseEntity<String> createOrder(@AuthenticationPrincipal UserDetailsImpl userDetails,
-//                                              @RequestBody CreateOrderDto createOrderDto) {
-//        try {
-//            Long userId = userDetails.getUser().getId();
-//            Order order = orderService.createOrder(userId, createOrderDto.getItems());
-//            return ResponseEntity.ok("주문 완료 -> 주문번호 : " + order.getId());
-//        } catch (Exception e) {
-//            return ResponseEntity.badRequest().body(e.getMessage());
-//        }
-//    }
-//    // 주문 생성
-//    @PostMapping
-//    public ResponseEntity<OrderDto> createOrder(@RequestHeader("X-Auth-User-ID") String userId,
-//                                                @RequestBody OrderDto orderDto) {
-//        try {
-//            Order order = orderService.createOrder(userId, orderDto.getItems());
-//            // 생성된 Order를 OrderDto로 변환하여 반환
-//            OrderDto createdOrderDto = new OrderDto();
-//            createdOrderDto.setId(order.getId());
-//            createdOrderDto.setOrderDate(order.getOrderDate());
-//            createdOrderDto.setTotalPrice(order.getTotalPrice());
-//            createdOrderDto.setStatus(order.getStatus());
-//            createdOrderDto.setItems(orderDto.getItems()); // OrderItemDto 리스트 설정
-//            return ResponseEntity.ok(createdOrderDto);
-//        } catch (Exception e) {
-////            e.printStackTrace();
-//            return ResponseEntity.badRequest().body(null);
 //        }
 //    }
 }
