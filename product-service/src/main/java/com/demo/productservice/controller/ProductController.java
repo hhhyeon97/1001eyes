@@ -52,7 +52,7 @@ public class ProductController {
         }
     }
 
-    // 재고 업데이트 API
+    // order-service 소통 -> 재고 업데이트 api
     @PutMapping("/{id}/stock")
     public ResponseEntity<String> updateProductStock(@PathVariable("id") Long id, @RequestParam("stock") int stock) {
         Optional<Product> productOpt = productService.findItemById(id);
