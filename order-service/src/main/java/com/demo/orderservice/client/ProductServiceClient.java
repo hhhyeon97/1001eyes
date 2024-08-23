@@ -11,7 +11,7 @@ public interface ProductServiceClient {
     @GetMapping("/api/products/{id}")
     ResponseEntity<ProductResponseDto> getProductById(@PathVariable("id") Long id);
 
-    // 재고 업데이트 API
+    // 재고 업데이트할 내부 api
     @PutMapping("/api/products/{id}/stock")
     ResponseEntity<String> updateProductStock(@PathVariable("id") Long id, @RequestParam("stock") int stock);
 

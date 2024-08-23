@@ -70,6 +70,7 @@ public class OrderService {
     }
 
 
+    // todo : 추후 리팩토링 필요
     @Transactional // 트랜잭션 관리 적용
     public Order createOrder(String userId, List<OrderItemDto> orderItems) {
         if (orderItems == null || orderItems.isEmpty()) {
@@ -148,6 +149,38 @@ public class OrderService {
         }
     }
 
+    @Transactional // 트랜잭션 관리 적용
+    public void cancelOrder(Long orderId) {
+        Order order = orderRepository.findById(orderId)
+                .orElseThrow(() -> new RuntimeException("해당하는 주문 정보가 없습니다."));
+
+        // 상태가 '배송중' 이상인 경우 취소 불가
+        if (order.getStatus() != OrderStatus.PENDING) {
+            throw new RuntimeException("이미 배송 중이거나 배달 중이므로 주문을 취소할 수 없습니다.");
+        }
+
+        // 재고 복구
+        for (OrderItem item : order.getItems()) {
+            ResponseEntity<ProductResponseDto> responseEntity = productServiceClient.getProductById(item.getProductId());
+
+            if (responseEntity == null || !responseEntity.getStatusCode().is2xxSuccessful()) {
+                throw new RuntimeException("상품 정보를 가져올 수 없습니다: " + item.getProductId());
+            }
+
+            ProductResponseDto productDto = responseEntity.getBody();
+            if (productDto == null) {
+                throw new RuntimeException("상품 정보를 가져올 수 없습니다: " + item.getProductId());
+            }
+
+            // 재고 복구
+            int updatedStock = productDto.getStock() + item.getQuantity();
+            productServiceClient.updateProductStock(productDto.getId(), updatedStock);
+        }
+
+        // 주문 상태를 '취소됨'으로 변경
+        order.setStatus(OrderStatus.CANCELED);
+        orderRepository.save(order);
+    }
 
 //    // 주문 취소
 //    public void cancelOrder(Long orderId) {
@@ -175,6 +208,7 @@ public class OrderService {
 //        order.setStatus(OrderStatus.CANCELED);
 //        orderRepository.save(order);
 //    }
+
 
 
     /*
