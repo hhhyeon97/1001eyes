@@ -81,16 +81,15 @@ public class CartController {
         }
     }
 
-//    @PutMapping
-//    public ResponseEntity<String> updateCartItemQuantity(@AuthenticationPrincipal UserDetailsImpl userDetails,
-//                                                         @RequestParam Long cartItemId,
-//                                                         @RequestParam Integer newQuantity) {
-//        Long userId = userDetails.getUser().getId();
-//        try {
-//            cartService.updateCartItemQuantity(userId, cartItemId, newQuantity);
-//            return ResponseEntity.ok("장바구니 상품 수량이 업데이트되었습니다.");
-//        } catch (Exception e) {
-//            return ResponseEntity.badRequest().body(e.getMessage());
-//        }
-//    }
+    @PutMapping
+    public ResponseEntity<String> updateCartItemQuantity(@RequestHeader("X-Auth-User-ID") String userId,
+                                                         @RequestParam Long cartItemId,
+                                                         @RequestParam Integer newQuantity) {
+        try {
+            cartService.updateCartItemQuantity(userId, cartItemId, newQuantity);
+            return ResponseEntity.ok("장바구니 상품 수량이 업데이트되었습니다.");
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(e.getMessage());
+        }
+    }
 }

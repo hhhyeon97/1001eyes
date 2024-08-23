@@ -108,6 +108,26 @@ public class CartService {
     }
 
 
+    public void updateCartItemQuantity(String userId, Long cartItemId, Integer newQuantity) {
+        Cart cart = cartRepository.findByUserId(userId)
+                .orElseThrow(() -> new RuntimeException("장바구니 정보를 찾을 수 없습니다."));
+
+        CartItem cartItem = cartItemRepository.findById(cartItemId)
+                .orElseThrow(() -> new RuntimeException("장바구니에서 상품을 찾을 수 없습니다."));
+
+        if (!cart.getItems().contains(cartItem)) {
+            throw new RuntimeException("장바구니에 속하지 않은 상품입니다.");
+        }
+
+        cartItem.setQuantity(newQuantity);
+
+        updateTotalPrice(cart); // 총 가격 업데이트
+
+        cartItemRepository.save(cartItem);
+        cartRepository.save(cart); // 장바구니 업데이트
+    }
+
+    // 카트 총 가격 업데이트 메서드
     public void updateTotalPrice(Cart cart) {
         int totalPrice = cart.getItems().stream()
                 .mapToInt(item -> {
@@ -121,25 +141,4 @@ public class CartService {
                 .sum();
         cart.setTotalPrice(totalPrice);
     }
-
- /*
-
-
-    public void updateCartItemQuantity(Long userId, Long cartItemId, Integer newQuantity) {
-        Cart cart = cartRepository.findByUserId(userId)
-                .orElseThrow(() -> new RuntimeException("장바구니 정보를 찾을 수 없습니다."));
-
-        CartItem cartItem = cartItemRepository.findById(cartItemId)
-                .orElseThrow(() -> new RuntimeException("장바구니 내 상품을 찾을 수 없습니다."));
-
-        if (!cart.getItems().contains(cartItem)) {
-            throw new RuntimeException("장바구니에 속하지 않은 상품입니다.");
-        }
-
-        cartItem.setQuantity(newQuantity);
-        cart.updateTotalPrice(); // 총 가격 업데이트
-
-        cartItemRepository.save(cartItem);
-        cartRepository.save(cart); // 장바구니 업데이트
-    }*/
 }
