@@ -11,8 +11,10 @@ import com.demo.orderservice.repository.OrderRepository;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -68,74 +70,82 @@ public class OrderService {
     }
 
 
+    @Transactional // 트랜잭션 관리 적용
     public Order createOrder(String userId, List<OrderItemDto> orderItems) {
-        // 주문 생성 시 유저 ID를 사용
         if (orderItems == null || orderItems.isEmpty()) {
             throw new RuntimeException("주문 항목이 비어있습니다.");
         }
 
-        // 총 가격 계산 및 재고 확인
         int totalPrice = 0;
+        List<ProductResponseDto> productsToUpdate = new ArrayList<>();
 
-        // 각 주문 아이템에 대해 재고 확인 및 가격 계산
-        for (OrderItemDto dto : orderItems) {
-            // 상품 정보를 ProductService를 통해 조회
-            ResponseEntity<ProductResponseDto> responseEntity = productServiceClient.getProductById(dto.getProductId());
+        try {
+            // 모든 상품의 재고 확인
+            for (OrderItemDto dto : orderItems) {
+                ResponseEntity<ProductResponseDto> responseEntity = productServiceClient.getProductById(dto.getProductId());
 
-            if (responseEntity == null || !responseEntity.getStatusCode().is2xxSuccessful()) {
-                throw new RuntimeException("상품 정보를 조회할 수 없습니다: " + dto.getProductId());
+                if (responseEntity == null || !responseEntity.getStatusCode().is2xxSuccessful()) {
+                    throw new RuntimeException("상품 정보를 조회할 수 없습니다: " + dto.getProductId());
+                }
+
+                ProductResponseDto product = responseEntity.getBody();
+                if (product == null) {
+                    throw new RuntimeException("해당 상품을 찾을 수 없습니다: " + dto.getProductId());
+                }
+
+                // 재고 확인
+                if (product.getStock() < dto.getQuantity()) {
+                    throw new RuntimeException("상품 재고 부족: " + product.getId());
+                }
+
+                // 총 가격 계산
+                totalPrice += product.getPrice() * dto.getQuantity();
+                productsToUpdate.add(product);
             }
 
-            ProductResponseDto product = responseEntity.getBody();
-            if (product == null) {
-                throw new RuntimeException("해당 상품을 찾을 수 없습니다: " + dto.getProductId());
+            // 모든 재고 확인이 끝난 후 재고 차감
+            for (OrderItemDto dto : orderItems) {
+                ProductResponseDto product = productsToUpdate.stream()
+                        .filter(p -> p.getId().equals(dto.getProductId()))
+                        .findFirst()
+                        .orElseThrow(() -> new RuntimeException("상품 정보를 찾을 수 없습니다: " + dto.getProductId()));
+
+                int updatedStock = product.getStock() - dto.getQuantity();
+                productServiceClient.updateProductStock(product.getId(), updatedStock);
             }
 
-            // 재고 확인
-            if (product.getStock() < dto.getQuantity()) {
-                throw new RuntimeException("재고 부족한 상품 id : " + product.getId());
+            // 주문 객체 생성 및 설정
+            Order order = new Order();
+            order.setUserId(userId);
+            order.setStatus(OrderStatus.PENDING);
+            order.setOrderDate(LocalDateTime.now());
+            order.setTotalPrice(totalPrice);
+
+            // 주문 항목 추가
+            for (OrderItemDto dto : orderItems) {
+                ProductResponseDto product = productsToUpdate.stream()
+                        .filter(p -> p.getId().equals(dto.getProductId()))
+                        .findFirst()
+                        .orElseThrow(() -> new RuntimeException("상품 정보를 찾을 수 없습니다: " + dto.getProductId()));
+
+                OrderItem orderItem = new OrderItem();
+                orderItem.setProductId(dto.getProductId());
+                orderItem.setQuantity(dto.getQuantity());
+                orderItem.setPrice(product.getPrice());
+                orderItem.setOrder(order);
+
+                order.getItems().add(orderItem);
             }
 
-            // 재고 차감 로직
-            int updatedStock = product.getStock() - dto.getQuantity();
-            product.setStock(updatedStock); // 로컬 변수 업데이트
-            productServiceClient.updateProductStock(product.getId(), updatedStock); // 상품 서비스에 재고 업데이트 요청
+            // 주문 저장
+            orderRepository.save(order);
+            return order;
 
-            // 총 가격 계산
-            totalPrice += product.getPrice() * dto.getQuantity();
-
-            log.info("=========상품 조회 및 재고 차감 완료");
+        } catch (Exception e) {
+            // 예외 발생 시 롤백 자동 수행 (트랜잭션 관리에 의해)
+            log.error("주문 생성 중 오류 발생", e);
+            throw e;
         }
-
-        log.info("========오더 객체 생성하려고 시작한다.");
-
-        // Order 객체 생성 및 설정
-        Order order = new Order();
-        order.setUserId(userId);
-        order.setStatus(OrderStatus.PENDING);
-        order.setOrderDate(LocalDateTime.now());
-        order.setTotalPrice(totalPrice);
-
-        // OrderItem 생성 및 저장
-        for (OrderItemDto dto : orderItems) {
-            // 상품 정보를 ProductService를 통해 다시 조회
-            ResponseEntity<ProductResponseDto> responseEntity = productServiceClient.getProductById(dto.getProductId());
-            ProductResponseDto product = responseEntity.getBody();
-
-            // 각 주문 항목 생성
-            OrderItem orderItem = new OrderItem();
-            orderItem.setProductId(dto.getProductId());
-            orderItem.setQuantity(dto.getQuantity());
-            orderItem.setPrice(product.getPrice()); // Product의 가격을 설정
-            orderItem.setOrder(order); // Order와 연관 설정
-
-            // Order에 OrderItem 추가
-            order.getItems().add(orderItem);
-        }
-        // 주문 저장
-        orderRepository.save(order);
-
-        return order;
     }
 
 
