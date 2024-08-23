@@ -46,51 +46,35 @@ public class CartController {
         }
     }
 
-//    @GetMapping
-//    public ResponseEntity<?> getCart(@RequestHeader("X-Auth-User-ID") String userId) {
-//        List<CartItem> cartItems = cartService.getCartItems(userId);
-//
-//        if (cartItems.isEmpty()) {
-//            return ResponseEntity.ok("카트가 비어있습니다!");
-//        } else {
-//            // 카트 아이템들을 CartDto로 변환
-//            CartDto cartDto = new CartDto();
-//            cartDto.setId(cartItems.get(0).getCart().getId());
-//            cartDto.setUserId(userId);
-//            cartDto.setTotalPrice(cartItems.get(0).getCart().getTotalPrice());
-//            cartDto.setItems(cartItems.stream().map(item -> {
-//                CartItemDto itemDto = new CartItemDto();
-//                itemDto.setId(item.getId());
-////                itemDto.setProductId(item.getProduct().getId());
-//                itemDto.setQuantity(item.getQuantity());
-//                return itemDto;
-//            }).toList());
-//            return ResponseEntity.ok(cartDto);
-//        }
-//    }
-
     @PostMapping
     public ResponseEntity<String> addItemToCart(@RequestBody CartItemDto cartItemDto,
                                                 @RequestHeader("X-Auth-User-ID") String userId) {
         try {
+            // 장바구니에 아이템 추가
             cartService.addItemToCart(userId, cartItemDto.getProductId(), cartItemDto.getQuantity());
             return ResponseEntity.ok("상품이 장바구니에 추가되었습니다.");
-        } catch (Exception e) {
+        } catch (RuntimeException e) {
+            // 사용자 정의 예외 처리
             return ResponseEntity.badRequest().body(e.getMessage());
+        } catch (Exception e) {
+            // 일반 예외 처리
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("장바구니에 아이템을 추가하는 중 오류가 발생했습니다.");
         }
     }
-//
-//    @PostMapping
-//    public ResponseEntity<String> addItemToCart(@RequestBody CartItemDto cartItemDto,
-//                                                @RequestHeader("X-Auth-User-ID") String userId) {
-//        try {
-//            cartService.addItemToCart(userId, cartItemDto.getProductId(), cartItemDto.getQuantity());
-//            return ResponseEntity.ok("상품이 장바구니에 추가되었습니다.");
-//        } catch (Exception e) {
-//            return ResponseEntity.badRequest().body(e.getMessage());
-//        }
+
+//@PostMapping
+//public ResponseEntity<String> addItemToCart(@RequestBody CartItemDto cartItemDto,
+//                                            @RequestHeader("X-Auth-User-ID") String userId) {
+//    try {
+//        log.info("Request to add item to cart: userId={}, productId={}, quantity={}", userId, cartItemDto.getProductId(), cartItemDto.getQuantity());
+//        cartService.addItemToCart(userId, cartItemDto.getProductId(), cartItemDto.getQuantity());
+//        return ResponseEntity.ok("상품이 장바구니에 추가되었습니다.");
+//    } catch (Exception e) {
+//        log.error("Error adding item to cart", e);
+//        return ResponseEntity.badRequest().body(e.getMessage());
 //    }
-//
+//}
+
 //    @DeleteMapping
 //    public ResponseEntity<String> removeItemFromCart(@AuthenticationPrincipal UserDetailsImpl userDetails,
 //                                                     @RequestParam Long cartItemId) {

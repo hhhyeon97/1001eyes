@@ -6,10 +6,11 @@ import com.demo.orderservice.model.Cart;
 import com.demo.orderservice.model.CartItem;
 import com.demo.orderservice.repository.CartItemRepository;
 import com.demo.orderservice.repository.CartRepository;
+import feign.FeignException;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 
-import java.util.List;
 
 @Service
 @Slf4j
@@ -26,13 +27,6 @@ public class CartService {
         this.productServiceClient = productServiceClient;
     }
 
-//    public List<CartItem> getCartItems(String userId) {
-//        Cart cart = cartRepository.findByUserId(userId)
-//                .orElseThrow(() -> new RuntimeException("장바구니 정보를 찾을 수 없습니다."));
-//        return List.copyOf(cart.getItems());
-//    }
-
-
     public Cart getOrCreateCart(String userId) {
         // 사용자 ID로 카트 조회 또는 새 카트 생성
         return cartRepository.findByUserId(userId)
@@ -45,42 +39,94 @@ public class CartService {
     }
 
     public void addItemToCart(String userId, Long productId, Integer quantity) {
-        // 사용자 ID로 장바구니 조회
-        Cart cart = cartRepository.findByUserId(userId)
-                .orElseThrow(() -> new RuntimeException("장바구니 정보를 찾을 수 없습니다."));
+        // 사용자 ID로 장바구니 조회, 없으면 생성
+        Cart cart = getOrCreateCart(userId);
 
-        // ProductServiceClient를 사용하여 상품 정보 조회
-        ProductResponseDto productResponse = productServiceClient.getProductById(productId).getMessage();
+        try {
+            // 상품 정보 조회
+            ResponseEntity<ProductResponseDto> responseEntity = productServiceClient.getProductById(productId);
 
-        if (productResponse == null) {
+            // 상품이 존재하지 않으면 예외 던지기
+            if (!responseEntity.getStatusCode().is2xxSuccessful() || responseEntity.getBody() == null) {
+                throw new RuntimeException("해당 상품이 존재하지 않습니다.");
+            }
+
+            ProductResponseDto product = responseEntity.getBody();
+
+            // 카트 아이템 조회
+            CartItem existingCartItem = cart.getItems().stream()
+                    .filter(item -> item.getProductId().equals(productId))
+                    .findFirst()
+                    .orElse(null);
+
+            if (existingCartItem != null) {
+                // 기존 아이템 수량 증가
+                existingCartItem.setQuantity(existingCartItem.getQuantity() + quantity);
+            } else {
+                // 새로운 아이템 추가
+                CartItem cartItem = new CartItem();
+                cartItem.setCart(cart);
+                cartItem.setProductId(productId);
+                cartItem.setQuantity(quantity);
+                cart.getItems().add(cartItem);
+                cartItemRepository.save(cartItem); // 새로운 아이템 저장
+            }
+
+            // 총 가격 업데이트
+            updateTotalPrice(cart);
+
+            // 카트 저장
+            cartRepository.save(cart);
+
+        } catch (FeignException.NotFound e) {
+            // FeignException.NotFound (404 에러)인 경우
             throw new RuntimeException("해당 상품이 존재하지 않습니다.");
+        } catch (FeignException e) {
+            // 기타 Feign 관련 에러 처리
+            throw new RuntimeException("상품 정보를 조회하는 중 오류가 발생했습니다. 잠시 후 다시 시도해 주세요.");
+        } catch (Exception e) {
+            // 일반 예외 처리
+            throw new RuntimeException("장바구니에 아이템을 추가하는 중 오류가 발생했습니다.");
         }
-
-        CartItem cartItem = new CartItem();
-        cartItem.setCart(cart);
-        cartItem.setProductId(productId); // 직접 상품 ID 사용
-        cartItem.setQuantity(quantity);
-
-        cart.getItems().add(cartItem); // 카트에 아이템 추가
-
-        cartItemRepository.save(cartItem);
-        cartRepository.save(cart); // 장바구니 업데이트
     }
 
-    public void updateCartTotalPrice(Long cartId) {
-        Cart cart = cartRepository.findById(cartId)
-                .orElseThrow(() -> new RuntimeException("장바구니를 찾을 수 없습니다."));
-
+    public void updateTotalPrice(Cart cart) {
         int totalPrice = cart.getItems().stream()
                 .mapToInt(item -> {
-                    ProductResponseDto product = productServiceClient.getProductById(item.getProductId()).getMessage();
-                    return product != null ? product.getPrice() * item.getQuantity() : 0;
+                    ResponseEntity<ProductResponseDto> responseEntity = productServiceClient.getProductById(item.getProductId());
+                    if (!responseEntity.getStatusCode().is2xxSuccessful() || responseEntity.getBody() == null) {
+                        throw new RuntimeException("상품 정보 조회 중 오류가 발생했습니다.");
+                    }
+                    ProductResponseDto product = responseEntity.getBody();
+                    return product.getPrice() * item.getQuantity();
                 })
                 .sum();
-
         cart.setTotalPrice(totalPrice);
-        cartRepository.save(cart); // 업데이트된 총 가격 저장
     }
+
+
+//    public void addItemToCart(String userId, Long productId, Integer quantity) {
+//        // 사용자 ID로 장바구니 조회
+//        Cart cart = cartRepository.findByUserId(userId)
+//                .orElseThrow(() -> new RuntimeException("장바구니 정보를 찾을 수 없습니다."));
+//
+//        // ProductServiceClient를 사용하여 상품 정보 조회
+//        ProductResponseDto productResponse = productServiceClient.getProductById(productId).getMessage();
+//
+//        if (productResponse == null) {
+//            throw new RuntimeException("해당 상품이 존재하지 않습니다.");
+//        }
+//
+//        CartItem cartItem = new CartItem();
+//        cartItem.setCart(cart);
+//        cartItem.setProductId(productId);
+//        cartItem.setQuantity(quantity);
+//
+//        cart.getItems().add(cartItem); // 카트에 아이템 추가
+//        cartItemRepository.save(cartItem);
+//        cartRepository.save(cart); // 장바구니 업데이트
+//    }
+
 
 //    public void addItemToCart(Long userId, Long productId, Integer quantity) {
 //        Cart cart = cartRepository.findByUserId(userId)
