@@ -36,13 +36,6 @@ public class JwtAuthorizationGatewayFilterFactory extends AbstractGatewayFilterF
                 log.info(tokenValue);
 
                 if (!jwtUtil.validateToken(tokenValue)) {
-//                    log.error("Token Error");
-//                    // 응답 메시지 작성 및 상태 코드 설정
-//                    exchange.getResponse().setStatusCode(HttpStatus.UNAUTHORIZED);
-//                    exchange.getResponse().getHeaders().add("Content-Type", "application/json");
-//                    String responseMessage = "{\"message\":\"쿠키가 만료되었습니다. 로그인 후 이용해 주세요\"}";
-//                    return exchange.getResponse().writeWith(Mono.just(exchange.getResponse().bufferFactory().wrap(responseMessage.getBytes())));
-
                     log.error("Expired JWT token, 로그아웃 처리됩니다.");
                     // 쿠키 제거 메서드 호출
                     jwtUtil.removeJwtCookie(exchange.getResponse());
@@ -51,7 +44,6 @@ public class JwtAuthorizationGatewayFilterFactory extends AbstractGatewayFilterF
                     String responseMessage = "{\"message\":\"토큰이 만료되었습니다. 다시 로그인해 주세요.\"}";
                     return exchange.getResponse().writeWith(Mono.just(exchange.getResponse().bufferFactory().wrap(responseMessage.getBytes())));
                 }
-
                 Claims info = jwtUtil.getUserInfoFromToken(tokenValue);
                 String userId = info.getSubject();
                 log.info("유저 정보: {}", userId);
@@ -70,13 +62,6 @@ public class JwtAuthorizationGatewayFilterFactory extends AbstractGatewayFilterF
             return exchange.getResponse().setComplete();
         };
     }
-
-   /* // 인증 처리
-    public void setAuthentication(String username) {
-        Authentication authentication = createAuthentication(username);
-        SecurityContextHolder.getContext().setAuthentication(authentication);
-    }*/
-
     // Config 클래스는 필터 구성용 빈 클래스입니다.
     public static class Config {
         // 필요한 필터 구성 설정을 여기에 추가할 수 있습니다.
