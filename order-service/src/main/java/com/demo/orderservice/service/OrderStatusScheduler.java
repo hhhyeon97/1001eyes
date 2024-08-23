@@ -1,10 +1,13 @@
 package com.demo.orderservice.service;
 
+import com.demo.orderservice.client.ProductServiceClient;
+import com.demo.orderservice.dto.ProductResponseDto;
 import com.demo.orderservice.model.Order;
 import com.demo.orderservice.model.OrderItem;
 import com.demo.orderservice.model.OrderStatus;
 import com.demo.orderservice.repository.OrderRepository;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.http.ResponseEntity;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
@@ -17,12 +20,14 @@ import java.util.List;
 public class OrderStatusScheduler {
 
     private final OrderRepository orderRepository;
-//    private final ProductRepository productRepository; // ProductRepository 추가
+    private final ProductServiceClient productServiceClient;
 
-    public OrderStatusScheduler(OrderRepository orderRepository) {
+    public OrderStatusScheduler(OrderRepository orderRepository, ProductServiceClient productServiceClient) {
         this.orderRepository = orderRepository;
+        this.productServiceClient = productServiceClient;
     }
 
+    // todo : 리팩토링
     // 매일 자정에 주문 상태 업데이트 작업 실행
     // @Scheduled(cron = "0 0 0 * * ?")
     @Transactional  // 더티체킹을 위해 트랜잭션 추가
@@ -60,17 +65,33 @@ public class OrderStatusScheduler {
         List<Order> returnRequestedOrders = orderRepository.findByStatus(OrderStatus.RETURN_REQUESTED);
         for (Order order : returnRequestedOrders) {
             if (order.getReturnRequestDate().plusMinutes(1).isBefore(now)) {
-                // 재고 업데이트
-                for (OrderItem item : order.getItems()) {
-//                    Product product = item.getProduct();
-//                    product.setStock(product.getStock() + item.getQuantity());
-//                    productRepository.save(product);
-                    
+                try {
+                    // 재고 업데이트
+                    for (OrderItem item : order.getItems()) {
+                        ResponseEntity<ProductResponseDto> responseEntity = productServiceClient.getProductById(item.getProductId());
+                        if (responseEntity == null || !responseEntity.getStatusCode().is2xxSuccessful()) {
+                            throw new RuntimeException("상품 정보를 가져올 수 없습니다: " + item.getProductId());
+                        }
+
+                        ProductResponseDto productDto = responseEntity.getBody();
+                        if (productDto == null) {
+                            throw new RuntimeException("상품 정보를 가져올 수 없습니다: " + item.getProductId());
+                        }
+
+                        // 재고 복구
+                        int updatedStock = productDto.getStock() + item.getQuantity();
+                        productServiceClient.updateProductStock(productDto.getId(), updatedStock);
+                    }
+
+                    // 상태를 'RETURNED'로 변경
+                    order.setStatus(OrderStatus.RETURNED);
+                    orderRepository.save(order);
+                    log.info("주문 ID {}의 상태가 RETURNED로 변경 + 재고 업데이트 완료", order.getId());
+
+                } catch (Exception e) {
+                    log.error("주문 ID {}의 반품 처리 중 오류 발생: {}", order.getId(), e.getMessage());
+                    throw new RuntimeException("반품 처리 중 오류 발생: " + e.getMessage());
                 }
-                // 상태를 'RETURNED'로 변경
-                order.setStatus(OrderStatus.RETURNED);
-                orderRepository.save(order);
-                log.info("주문 ID {}의 상태가 RETURNED로 변경 + 재고 업데이트 완료", order.getId());
             }
         }
         log.info("스케줄러 종료 시간 : {}", LocalDateTime.now());

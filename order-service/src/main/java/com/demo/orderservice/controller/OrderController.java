@@ -49,13 +49,13 @@ public class OrderController {
         }
     }
 
-//    @PostMapping("/return")
-//    public ResponseEntity<String> requestReturn(@RequestParam Long orderId) {
-//        try {
-//            orderService.requestReturn(orderId);
-//            return ResponseEntity.ok("반품 요청 완료");
-//        } catch (Exception e) {
-//            return ResponseEntity.badRequest().body(e.getMessage());
-//        }
-//    }
+    @PostMapping("/return")
+    public ResponseEntity<String> requestReturn(@RequestParam Long orderId) {
+        try {
+            orderService.requestReturn(orderId);
+            return ResponseEntity.ok("반품 요청 완료");
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(e.getMessage());
+        }
+    }
 }
