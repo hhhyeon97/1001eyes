@@ -18,22 +18,13 @@ public class OrderController {
         this.orderService = orderService;
     }
 
-    // todo : 수정한 흐름 정리하고 기존 코드 제거하기
-    // 게이트웨이에서 헤더에 넣어줬잖아 -/> 헤더에서 뽑아오는걸로 변경
-    // 기존 코드
-//    @GetMapping
-//    public ResponseEntity<List<OrderDto>> getOrders(@AuthenticationPrincipal UserDetailsImpl userDetails) {
-//        Long userId = userDetails.getUser().getId();
-//        List<OrderDto> orders = orderService.getOrdersByUserAsDto(userId);
-//        return ResponseEntity.ok(orders);
-//    }
 
-//    // 수정 코드 - 주문 조회
-//    @GetMapping
-//    public ResponseEntity<List<OrderDto>> getOrders(@RequestHeader("X-Auth-User-ID") String userId) {
-//        List<OrderDto> orders = orderService.getOrdersByUserAsDto(userId);
-//        return ResponseEntity.ok(orders);
-//    }
+    // 주문 조회
+    @GetMapping
+    public ResponseEntity<List<OrderDto>> getOrders(@RequestHeader("X-Auth-User-ID") String userId) {
+        List<OrderDto> orders = orderService.getOrdersByUserAsDto(userId);
+        return ResponseEntity.ok(orders);
+    }
 
 //    @PostMapping("/cancel")
 //    public ResponseEntity<String> cancelOrder(@RequestParam Long orderId) {

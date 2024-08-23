@@ -81,6 +81,7 @@ public class CartController {
         }
     }
 
+    // 카트 상품 수량 업데이트
     @PutMapping
     public ResponseEntity<String> updateCartItemQuantity(@RequestHeader("X-Auth-User-ID") String userId,
                                                          @RequestParam Long cartItemId,

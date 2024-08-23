@@ -26,11 +26,4 @@ public class Cart {
     @OneToMany(mappedBy = "cart", cascade = CascadeType.ALL, orphanRemoval = true)
     private Set<CartItem> items = new HashSet<>();
 
-////    // 카트의 총 가격을 업데이트하는 메서드
-//    public void updateTotalPrice() {
-//        totalPrice = items.stream()
-//                .mapToInt(item -> item.getProduct().getPrice() * item.getQuantity())
-//                .sum();
-//    }
-
 }

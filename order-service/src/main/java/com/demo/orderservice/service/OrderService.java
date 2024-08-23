@@ -5,62 +5,64 @@ import com.demo.orderservice.dto.OrderDto;
 import com.demo.orderservice.dto.OrderItemDto;
 import com.demo.orderservice.dto.ProductResponseDto;
 import com.demo.orderservice.model.Order;
-import com.demo.orderservice.model.OrderItem;
-import com.demo.orderservice.model.OrderStatus;
 import com.demo.orderservice.repository.OrderRepository;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 
-import java.time.LocalDateTime;
 import java.util.List;
 import java.util.stream.Collectors;
 
 
 @Service
-@Slf4j(topic = "오더 서비스다 !!")
+@Slf4j(topic = "오더 서비스")
 public class OrderService {
 
     private final OrderRepository orderRepository;
-    private final ProductServiceClient productClient;
+    private final ProductServiceClient productServiceClient;
 
-    public OrderService(OrderRepository orderRepository, ProductServiceClient productClient) {
+    public OrderService(OrderRepository orderRepository, ProductServiceClient productServiceClient) {
         this.orderRepository = orderRepository;
-        this.productClient = productClient;
+        this.productServiceClient = productServiceClient;
     }
 
-//    // 주문 조회
-//    public List<OrderDto> getOrdersByUserAsDto(String userId) {
-//        List<Order> orders = orderRepository.findByUserId(userId);
-//
-//        return orders.stream().map(order -> {
-//            OrderDto orderDto = new OrderDto();
-//            orderDto.setId(order.getId());
-//            orderDto.setOrderDate(order.getOrderDate());
-//            orderDto.setDeliveryDate(order.getDeliveryDate());
-//            orderDto.setTotalPrice(order.getTotalPrice());
-//            orderDto.setStatus(order.getStatus());
-//
-//            // OrderItemDto 변환 및 설정
-//            List<OrderItemDto> items = order.getItems().stream().map(item -> {
-//                OrderItemDto itemDto = new OrderItemDto();
-//                itemDto.setProductId(item.getProductId());
-//                itemDto.setQuantity(item.getQuantity());
-//                itemDto.setPrice(item.getPrice());
-//
-//                // Feign Client를 통해 상품 정보를 가져옵니다.
-//                ProductResponseDto productDto = productClient.getProductById(item.getProductId()).getMessage();
-//
-//                if (productDto != null) {
-////                    itemDto.setProductName(productDto.getTitle());
-//                    itemDto.setPrice(productDto.getPrice());
-//                }
-//
-//                return itemDto;
-//            }).collect(Collectors.toList());
-//            orderDto.setItems(items);
-//            return orderDto;
-//        }).collect(Collectors.toList());
-//    }
+    public List<OrderDto> getOrdersByUserAsDto(String userId) {
+        List<Order> orders = orderRepository.findByUserId(userId);
+
+        return orders.stream().map(order -> {
+            OrderDto orderDto = new OrderDto();
+            orderDto.setId(order.getId());
+            orderDto.setOrderDate(order.getOrderDate());
+            orderDto.setDeliveryDate(order.getDeliveryDate());
+            orderDto.setTotalPrice(order.getTotalPrice());
+            orderDto.setStatus(order.getStatus());
+
+            // OrderItemDto 변환 및 설정
+            List<OrderItemDto> items = order.getItems().stream().map(item -> {
+                OrderItemDto itemDto = new OrderItemDto();
+                itemDto.setProductId(item.getProductId());
+                itemDto.setQuantity(item.getQuantity());
+                itemDto.setPrice(item.getPrice());
+
+                // Feign Client를 통해 상품 정보 가져오기
+                ResponseEntity<ProductResponseDto> responseEntity = productServiceClient.getProductById(item.getProductId());
+
+                // 상품 정보가 정상적으로 반환된 경우에만 정보 설정
+                if (responseEntity.getStatusCode().is2xxSuccessful() && responseEntity.getBody() != null) {
+                    ProductResponseDto productDto = responseEntity.getBody();
+                    itemDto.setProductName(productDto.getTitle());
+                    itemDto.setPrice(productDto.getPrice()); // 상품 가격 업데이트
+                } else {
+                    itemDto.setProductName("상품 조회 실패");
+                }
+                return itemDto;
+            }).collect(Collectors.toList());
+
+            orderDto.setItems(items);
+            return orderDto;
+        }).collect(Collectors.toList());
+
+    }
 
 //    // 주문 취소
 //    public void cancelOrder(Long orderId) {
