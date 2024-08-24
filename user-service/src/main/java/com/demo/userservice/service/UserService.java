@@ -48,7 +48,6 @@ public class UserService {
         this.verificationTokenRepository = verificationTokenRepository;
     }
 
-    // 이메일 인증 코드 전송
     public void sendVerificationCode(String email) {
         String encryptedEmail;
         try {
@@ -76,19 +75,27 @@ public class UserService {
             if (!existingToken.isVerified()) {
                 existingToken.setVerificationCode(verificationCode);
                 existingToken.setExpiryDate(expiryDate);
-                verificationTokenRepository.save(existingToken);
             } else {
                 throw new IllegalArgumentException("이미 인증된 이메일입니다.");
             }
         } else {
             // 새 인증 토큰 생성
             VerificationToken token = new VerificationToken(encryptedEmail, verificationCode, expiryDate);
-            verificationTokenRepository.save(token);
+            existingToken = token;
         }
-        // 이메일 전송
-        String subject = "1001eyes 가입을 위한 인증코드 발급";
-        String text = "인증 코드 6자리 : " + verificationCode;
-        sendEmail(email, subject, text);
+
+        try {
+            // 이메일 전송
+            String subject = "1001eyes 가입을 위한 인증코드 발급";
+            String text = "인증 코드 6자리 : " + verificationCode;
+            sendEmail(email, subject, text);
+
+            // 이메일 전송 성공 시에만 토큰을 저장
+            verificationTokenRepository.save(existingToken);
+        } catch (Exception e) {
+            // 이메일 전송 실패 시 예외 처리
+            throw new RuntimeException("이메일 전송 실패", e);
+        }
     }
 
     // 이메일 인증 처리
@@ -208,6 +215,12 @@ public class UserService {
         } else {
             throw new UsernameNotFoundException("사용자를 찾을 수 없습니다.");
         }
+    }
+
+    // 현재 인증된 유저 정보 가져오기
+    public User findUserById(String userId) {
+        return userRepository.findByUsername(userId)
+                .orElseThrow(() -> new UsernameNotFoundException("사용자를 찾을 수 없습니다."));
     }
 
     // 이메일 전송 메서드
