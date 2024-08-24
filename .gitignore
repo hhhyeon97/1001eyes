@@ -37,6 +37,4 @@ out/
 .vscode/
 
 #application.properties
-mysql-data/
-data/
 .env
