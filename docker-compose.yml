@@ -1,18 +1,5 @@
 version: '3.8'
 services:
-# 모놀리식 구조일 때
-#  myapp:
-#    image: my-test-image
-#    container_name: springboot-container
-#    build:
-#      context: .
-#      dockerfile: Dockerfile
-#    depends_on:
-#      db:
-#        condition: service_healthy
-#    ports:
-#      - "8081:8080"
-
   db:
     image: mysql:8.0
     container_name: my-sql-server
@@ -23,8 +10,8 @@ services:
       - "3308:3306"
     volumes:
       - mysql_data:/var/lib/mysql
-#    networks:
-#      - my-network
+    networks:
+      - my-network
 
   discovery-server:
     build:
@@ -32,8 +19,8 @@ services:
       dockerfile: Dockerfile
     ports:
       - "8761:8761"
-#    networks:
-#      - my-network
+    networks:
+      - my-network
 
   user-service:
     build:
@@ -44,19 +31,59 @@ services:
     depends_on:
       - db
     environment:
-      SPRING_DATASOURCE_URL: jdbc:mysql://db:3306/myshop?useSSL=false&serverTimezone=UTC&allowPublicKeyRetrieval=true
+      SPRING_DATASOURCE_URL: jdbc:mysql://db:3306/myshop
       SPRING_DATASOURCE_USERNAME: root
       SPRING_DATASOURCE_PASSWORD: 1234
+    env_file:
+      - .env
+    networks:
+      - my-network
+
+  product-service:
+    build:
+      context: ./product-service
+      dockerfile: Dockerfile
+    ports:
+      - "8082:8082"
+    depends_on:
+      - db
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:mysql://db:3306/myshop
+      SPRING_DATASOURCE_USERNAME: root
+      SPRING_DATASOURCE_PASSWORD: 1234
+    networks:
+      - my-network
+
+  order-service:
+    build:
+      context: ./order-service
+      dockerfile: Dockerfile
+    ports:
+      - "8083:8083"
+    depends_on:
+      - db
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:mysql://db:3306/myshop
+      SPRING_DATASOURCE_USERNAME: root
+      SPRING_DATASOURCE_PASSWORD: 1234
+    networks:
+      - my-network
+
+#  api-gateway:
+#    build:
+#      context: ./api-gateway
+#      dockerfile: Dockerfile
+#    ports:
+#      - "8084:8084"
 #    networks:
 #      - my-network
 
-
 volumes:
   mysql_data:
-#
-#networks:
-#  my-network:
-#    driver: bridge
+
+networks:
+  my-network:
+    driver: bridge
 
 #  redis:
 #    image: redis:latest
@@ -65,38 +92,4 @@ volumes:
 #      - "6379:6379"
 #    restart: always
 
-# MSA 구조로 전환 후 각 서비스 띄우기
 
-#  order-service:
-#    build:
-#      context: ./order-service
-#      dockerfile: Dockerfile
-#    ports:
-#      - "8083:8083"
-#    networks:
-#      - msa-network
-#
-#  product-service:
-#    build:
-#      context: ./product-service
-#      dockerfile: Dockerfile
-#    ports:
-#      - "8082:8082"
-#    networks:
-#      - msa-network
-#
-
-
-#
-#  api-gateway:
-#    build:
-#      context: ./api-gateway
-#      dockerfile: Dockerfile
-#    ports:
-#      - "8084:8084"
-#    networks:
-#      - msa-network
-#
-#networks:
-#  msa-network:
-#    driver: bridge
