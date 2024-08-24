@@ -20,11 +20,11 @@ services:
       MYSQL_ROOT_PASSWORD: 1234
       MYSQL_DATABASE: myshop
     ports:
-      - "3308:3308"
+      - "3308:3306"
     volumes:
       - mysql_data:/var/lib/mysql
-    networks:
-      - my-network
+#    networks:
+#      - my-network
 
   discovery-server:
     build:
@@ -32,8 +32,8 @@ services:
       dockerfile: Dockerfile
     ports:
       - "8761:8761"
-    networks:
-      - my-network
+#    networks:
+#      - my-network
 
   user-service:
     build:
@@ -44,19 +44,19 @@ services:
     depends_on:
       - db
     environment:
-      SPRING_DATASOURCE_URL: jdbc:mysql://db:3308/myshop
+      SPRING_DATASOURCE_URL: jdbc:mysql://db:3306/myshop?useSSL=false&serverTimezone=UTC&allowPublicKeyRetrieval=true
       SPRING_DATASOURCE_USERNAME: root
       SPRING_DATASOURCE_PASSWORD: 1234
-    networks:
-      - my-network
+#    networks:
+#      - my-network
 
 
 volumes:
   mysql_data:
-
-networks:
-  my-network:
-    driver: bridge
+#
+#networks:
+#  my-network:
+#    driver: bridge
 
 #  redis:
 #    image: redis:latest
