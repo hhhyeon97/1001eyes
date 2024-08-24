@@ -10,6 +10,8 @@ services:
       - "3308:3306"
     volumes:
       - mysql_data:/var/lib/mysql
+    networks:
+      - my-network
 
   discovery-server:
     build:
@@ -17,6 +19,8 @@ services:
       dockerfile: Dockerfile
     ports:
       - "8761:8761"
+    networks:
+      - my-network
 
   user-service:
     build:
@@ -32,6 +36,8 @@ services:
       SPRING_DATASOURCE_PASSWORD: 1234
     env_file:
       - .env
+    networks:
+      - my-network
 
   product-service:
     build:
@@ -45,30 +51,23 @@ services:
       SPRING_DATASOURCE_URL: jdbc:mysql://db:3306/myshop
       SPRING_DATASOURCE_USERNAME: root
       SPRING_DATASOURCE_PASSWORD: 1234
+    networks:
+      - my-network
 
-
-volumes:
-  mysql_data:
-#
-#networks:
-#  my-network:
-#    driver: bridge
-
-#  redis:
-#    image: redis:latest
-#    container_name: my-redis-server
-#    ports:
-#      - "6379:6379"
-#    restart: always
-
-#  order-service:
-#    build:
-#      context: ./order-service
-#      dockerfile: Dockerfile
-#    ports:
-#      - "8083:8083"
-#    networks:
-#      - msa-network
+  order-service:
+    build:
+      context: ./order-service
+      dockerfile: Dockerfile
+    ports:
+      - "8083:8083"
+    depends_on:
+      - db
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:mysql://db:3306/myshop
+      SPRING_DATASOURCE_USERNAME: root
+      SPRING_DATASOURCE_PASSWORD: 1234
+    networks:
+      - my-network
 
 #  api-gateway:
 #    build:
@@ -77,4 +76,20 @@ volumes:
 #    ports:
 #      - "8084:8084"
 #    networks:
-#      - msa-network
+#      - my-network
+
+volumes:
+  mysql_data:
+
+networks:
+  my-network:
+    driver: bridge
+
+#  redis:
+#    image: redis:latest
+#    container_name: my-redis-server
+#    ports:
+#      - "6379:6379"
+#    restart: always
+
+
