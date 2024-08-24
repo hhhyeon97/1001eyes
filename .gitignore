@@ -39,3 +39,4 @@ out/
 #application.properties
 mysql-data/
 data/
+.env

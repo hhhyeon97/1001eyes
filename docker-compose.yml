@@ -18,13 +18,45 @@ services:
     container_name: my-sql-server
     environment:
       MYSQL_ROOT_PASSWORD: 1234
-      MYSQL_USER: root
-      MYSQL_PASSWORD: 1234
       MYSQL_DATABASE: myshop
     ports:
-      - "3308:3306"
+      - "3308:3308"
     volumes:
-      - ./data:/var/lib/mysql
+      - mysql_data:/var/lib/mysql
+    networks:
+      - my-network
+
+  discovery-server:
+    build:
+      context: ./discovery-server
+      dockerfile: Dockerfile
+    ports:
+      - "8761:8761"
+    networks:
+      - my-network
+
+  user-service:
+    build:
+      context: ./user-service
+      dockerfile: Dockerfile
+    ports:
+      - "8081:8081"
+    depends_on:
+      - db
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:mysql://db:3308/myshop
+      SPRING_DATASOURCE_USERNAME: root
+      SPRING_DATASOURCE_PASSWORD: 1234
+    networks:
+      - my-network
+
+
+volumes:
+  mysql_data:
+
+networks:
+  my-network:
+    driver: bridge
 
 #  redis:
 #    image: redis:latest
@@ -34,7 +66,7 @@ services:
 #    restart: always
 
 # MSA 구조로 전환 후 각 서비스 띄우기
-#
+
 #  order-service:
 #    build:
 #      context: ./order-service
@@ -53,23 +85,8 @@ services:
 #    networks:
 #      - msa-network
 #
-#  user-service:
-#    build:
-#      context: ./user-service
-#      dockerfile: Dockerfile
-#    ports:
-#      - "8081:8081"
-#    networks:
-#      - msa-network
-#
-#  discovery-server:
-#    build:
-#      context: ./discovery-server
-#      dockerfile: Dockerfile
-#    ports:
-#      - "8761:8761"
-#    networks:
-#      - msa-network
+
+
 #
 #  api-gateway:
 #    build:

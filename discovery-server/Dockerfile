@@ -1,4 +1,4 @@
-FROM openjdk:21-jdk-alpine
+FROM openjdk:21-jdk-slim
 WORKDIR /app
 ARG JAR_FILE=build/libs/discovery-server-*.jar
 COPY ${JAR_FILE} /app/discovery-server.jar
