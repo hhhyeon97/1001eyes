@@ -1,5 +1,6 @@
-#version: '3.8'
-#services:
+version: '3.8'
+services:
+# 모놀리식 구조일 때
 #  myapp:
 #    image: my-test-image
 #    container_name: springboot-container
@@ -12,18 +13,50 @@
 #    ports:
 #      - "8081:8080"
 
-#  db:
-#    image: mysql:8.0
-#    container_name: mysql-container
-#    environment:
-#      MYSQL_ROOT_PASSWORD: 1234
-#      MYSQL_DATABASE: my-shop
-#    ports:
-#      - "3307:3306"
-#    healthcheck:
-#      test: [ "CMD-SHELL", "mysqladmin ping -h localhost -u root -p1234 && sleep 5" ]
-#      interval: 5s
-#      retries: 10
+  db:
+    image: mysql:8.0
+    container_name: my-sql-server
+    environment:
+      MYSQL_ROOT_PASSWORD: 1234
+      MYSQL_DATABASE: myshop
+    ports:
+      - "3308:3306"
+    volumes:
+      - mysql_data:/var/lib/mysql
+#    networks:
+#      - my-network
+
+  discovery-server:
+    build:
+      context: ./discovery-server
+      dockerfile: Dockerfile
+    ports:
+      - "8761:8761"
+#    networks:
+#      - my-network
+
+  user-service:
+    build:
+      context: ./user-service
+      dockerfile: Dockerfile
+    ports:
+      - "8081:8081"
+    depends_on:
+      - db
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:mysql://db:3306/myshop?useSSL=false&serverTimezone=UTC&allowPublicKeyRetrieval=true
+      SPRING_DATASOURCE_USERNAME: root
+      SPRING_DATASOURCE_PASSWORD: 1234
+#    networks:
+#      - my-network
+
+
+volumes:
+  mysql_data:
+#
+#networks:
+#  my-network:
+#    driver: bridge
 
 #  redis:
 #    image: redis:latest
@@ -32,3 +65,38 @@
 #      - "6379:6379"
 #    restart: always
 
+# MSA 구조로 전환 후 각 서비스 띄우기
+
+#  order-service:
+#    build:
+#      context: ./order-service
+#      dockerfile: Dockerfile
+#    ports:
+#      - "8083:8083"
+#    networks:
+#      - msa-network
+#
+#  product-service:
+#    build:
+#      context: ./product-service
+#      dockerfile: Dockerfile
+#    ports:
+#      - "8082:8082"
+#    networks:
+#      - msa-network
+#
+
+
+#
+#  api-gateway:
+#    build:
+#      context: ./api-gateway
+#      dockerfile: Dockerfile
+#    ports:
+#      - "8084:8084"
+#    networks:
+#      - msa-network
+#
+#networks:
+#  msa-network:
+#    driver: bridge
