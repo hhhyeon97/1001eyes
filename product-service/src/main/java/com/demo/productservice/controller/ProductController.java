@@ -52,18 +52,57 @@ public class ProductController {
         }
     }
 
-    // order-service 소통 -> 재고 업데이트 api
+//    // 남은 수량 조회
+//    @GetMapping("/{id}/stock")
+//    public ResponseEntity<Integer> getRemainingStock(@PathVariable("id") Long id) {
+//        Optional<Product> productOpt = productService.findItemById(id);
+//
+//        if (productOpt.isPresent()) {
+//            Product product = productOpt.get();
+//            int remainingStock = product.getStock(); // 재고 수량 가져오기
+//            return ResponseEntity.ok(remainingStock);
+//        } else {
+//            return ResponseEntity.status(404).body(null);
+//        }
+//    }
+//
+//    // order-service 소통 -> 재고 업데이트 api
+//    @PutMapping("/{id}/stock")
+//    public ResponseEntity<String> updateProductStock(@PathVariable("id") Long id, @RequestParam("stock") int stock) {
+//        Optional<Product> productOpt = productService.findItemById(id);
+//        System.out.println("=============상품 아이디 = " + id);
+//        if (productOpt.isPresent()) {
+//            Product product = productOpt.get();
+//            product.setStock(stock); // 새로운 재고 수량으로 설정
+//            productService.saveProduct2(product);
+//            return ResponseEntity.ok("재고가 성공적으로 업데이트되었습니다.");
+//        } else {
+//            return ResponseEntity.status(404).body("상품을 찾을 수 없습니다.");
+//        }
+//    }
+
+    // 남은 수량 조회
+    @GetMapping("/{id}/stock")
+    public ResponseEntity<Integer> getRemainingStock(@PathVariable("id") Long id) {
+        int remainingStock = productService.getStockFromRedis(id);
+        return ResponseEntity.ok(remainingStock);
+    }
+
+    // order-service와 내부 소통 -> 주문 생성시, 상품 반품 완료시 재고 업데이트 api
     @PutMapping("/{id}/stock")
     public ResponseEntity<String> updateProductStock(@PathVariable("id") Long id, @RequestParam("stock") int stock) {
+        productService.updateStockInRedis(id, stock);
+        // 기존 DB 업데이트 로직 유지
         Optional<Product> productOpt = productService.findItemById(id);
-        System.out.println("=============상품 아이디 = " + id);
         if (productOpt.isPresent()) {
             Product product = productOpt.get();
-            product.setStock(stock); // 새로운 재고 수량으로 설정
-            productService.saveProduct2(product);
+            product.setStock(stock);
+            productService.updateStock(product);
             return ResponseEntity.ok("재고가 성공적으로 업데이트되었습니다.");
         } else {
             return ResponseEntity.status(404).body("상품을 찾을 수 없습니다.");
         }
     }
+
+
 }
