@@ -2,16 +2,21 @@ version: '3.8'
 services:
   db:
     image: mysql:8.0
-    container_name: my-sql-server
+#    container_name: my-sql-server
     environment:
       MYSQL_ROOT_PASSWORD: 1234
       MYSQL_DATABASE: myshop
     ports:
       - "3308:3306"
     volumes:
-      - mysql_data:/var/lib/mysql
-    networks:
-      - my-network
+      - mysql_data_retry:/var/lib/mysql
+    healthcheck:
+      test: [ "CMD", "mysqladmin", "ping", "-h", "localhost" ]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+#    networks:
+#      - my-network
 
   discovery-server:
     build:
@@ -19,8 +24,8 @@ services:
       dockerfile: Dockerfile
     ports:
       - "8761:8761"
-    networks:
-      - my-network
+#    networks:
+#      - my-network
 
   user-service:
     build:
@@ -29,15 +34,16 @@ services:
     ports:
       - "8081:8081"
     depends_on:
-      - db
-    environment:
-      SPRING_DATASOURCE_URL: jdbc:mysql://db:3306/myshop
-      SPRING_DATASOURCE_USERNAME: root
-      SPRING_DATASOURCE_PASSWORD: 1234
+      db:
+        condition: service_healthy
+#    environment:
+#      SPRING_DATASOURCE_URL: jdbc:mysql://db:3306/myshop
+#      SPRING_DATASOURCE_USERNAME: root
+#      SPRING_DATASOURCE_PASSWORD: 1234
     env_file:
       - .env
-    networks:
-      - my-network
+#    networks:
+#      - my-network
 
   product-service:
     build:
@@ -46,13 +52,16 @@ services:
     ports:
       - "8082:8082"
     depends_on:
-      - db
-    environment:
-      SPRING_DATASOURCE_URL: jdbc:mysql://db:3306/myshop
-      SPRING_DATASOURCE_USERNAME: root
-      SPRING_DATASOURCE_PASSWORD: 1234
-    networks:
-      - my-network
+      db:
+        condition: service_healthy
+    env_file:
+      - .env
+#    environment:
+#      SPRING_DATASOURCE_URL: jdbc:mysql://db:3306/myshop
+#      SPRING_DATASOURCE_USERNAME: root
+#      SPRING_DATASOURCE_PASSWORD: 1234
+#    networks:
+#      - my-network
 
   order-service:
     build:
@@ -61,29 +70,32 @@ services:
     ports:
       - "8083:8083"
     depends_on:
-      - db
-    environment:
-      SPRING_DATASOURCE_URL: jdbc:mysql://db:3306/myshop
-      SPRING_DATASOURCE_USERNAME: root
-      SPRING_DATASOURCE_PASSWORD: 1234
-    networks:
-      - my-network
+      db:
+        condition: service_healthy
+    env_file:
+      - .env
+#    environment:
+#      SPRING_DATASOURCE_URL: jdbc:mysql://db:3306/myshop
+#      SPRING_DATASOURCE_USERNAME: root
+#      SPRING_DATASOURCE_PASSWORD: 1234
+#    networks:
+#      - my-network
 
-#  api-gateway:
-#    build:
-#      context: ./api-gateway
-#      dockerfile: Dockerfile
-#    ports:
-#      - "8084:8084"
+  api-gateway:
+    build:
+      context: ./api-gateway
+      dockerfile: Dockerfile
+    ports:
+      - "8084:8084"
 #    networks:
 #      - my-network
 
 volumes:
-  mysql_data:
+  mysql_data_retry:
 
-networks:
-  my-network:
-    driver: bridge
+#networks:
+#  my-network:
+#    driver: bridge
 
 #  redis:
 #    image: redis:latest
@@ -91,5 +103,4 @@ networks:
 #    ports:
 #      - "6379:6379"
 #    restart: always
-
 
