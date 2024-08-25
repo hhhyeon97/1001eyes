@@ -52,6 +52,20 @@ public class ProductController {
         }
     }
 
+    // 남은 수량 조회
+    @GetMapping("/{id}/stock")
+    public ResponseEntity<Integer> getRemainingStock(@PathVariable("id") Long id) {
+        Optional<Product> productOpt = productService.findItemById(id);
+
+        if (productOpt.isPresent()) {
+            Product product = productOpt.get();
+            int remainingStock = product.getStock(); // 재고 수량 가져오기
+            return ResponseEntity.ok(remainingStock);
+        } else {
+            return ResponseEntity.status(404).body(null);
+        }
+    }
+
     // order-service 소통 -> 재고 업데이트 api
     @PutMapping("/{id}/stock")
     public ResponseEntity<String> updateProductStock(@PathVariable("id") Long id, @RequestParam("stock") int stock) {
