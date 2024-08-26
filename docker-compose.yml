@@ -2,7 +2,6 @@ version: '3.8'
 services:
   db:
     image: mysql:8.0
-#    container_name: my-sql-server
     environment:
       MYSQL_ROOT_PASSWORD: 1234
       MYSQL_DATABASE: myshop
@@ -15,8 +14,6 @@ services:
       interval: 10s
       timeout: 5s
       retries: 3
-#    networks:
-#      - my-network
 
   discovery-server:
     build:
@@ -24,8 +21,6 @@ services:
       dockerfile: Dockerfile
     ports:
       - "8761:8761"
-#    networks:
-#      - my-network
 
   user-service:
     build:
@@ -36,14 +31,10 @@ services:
     depends_on:
       db:
         condition: service_healthy
-#    environment:
-#      SPRING_DATASOURCE_URL: jdbc:mysql://db:3306/myshop
-#      SPRING_DATASOURCE_USERNAME: root
-#      SPRING_DATASOURCE_PASSWORD: 1234
+    environment:
+      eureka.client.serviceUrl.defaultZone: http://discovery-server:8761/eureka/
     env_file:
       - .env
-#    networks:
-#      - my-network
 
   product-service:
     build:
@@ -56,12 +47,8 @@ services:
         condition: service_healthy
     env_file:
       - .env
-#    environment:
-#      SPRING_DATASOURCE_URL: jdbc:mysql://db:3306/myshop
-#      SPRING_DATASOURCE_USERNAME: root
-#      SPRING_DATASOURCE_PASSWORD: 1234
-#    networks:
-#      - my-network
+    environment:
+      eureka.client.serviceUrl.defaultZone: http://discovery-server:8761/eureka/
 
   order-service:
     build:
@@ -74,12 +61,8 @@ services:
         condition: service_healthy
     env_file:
       - .env
-#    environment:
-#      SPRING_DATASOURCE_URL: jdbc:mysql://db:3306/myshop
-#      SPRING_DATASOURCE_USERNAME: root
-#      SPRING_DATASOURCE_PASSWORD: 1234
-#    networks:
-#      - my-network
+    environment:
+      eureka.client.serviceUrl.defaultZone: http://discovery-server:8761/eureka/
 
   api-gateway:
     build:
@@ -87,20 +70,19 @@ services:
       dockerfile: Dockerfile
     ports:
       - "8084:8084"
-#    networks:
-#      - my-network
+    environment:
+      eureka.client.serviceUrl.defaultZone: http://discovery-server:8761/eureka/
+
+  redis:
+    image: redis:latest
+    container_name: my-redis-server
+    hostname: redis
+    ports:
+      - "6379:6379"
+    restart: always
+
 
 volumes:
   mysql_data_retry:
 
-#networks:
-#  my-network:
-#    driver: bridge
-
-#  redis:
-#    image: redis:latest
-#    container_name: my-redis-server
-#    ports:
-#      - "6379:6379"
-#    restart: always
 
