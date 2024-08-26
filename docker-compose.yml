@@ -22,6 +22,7 @@ services:
     build:
       context: ./discovery-server
       dockerfile: Dockerfile
+#    hostname: 172.30.1.254
     ports:
       - "8761:8761"
 #    networks:
@@ -36,7 +37,8 @@ services:
     depends_on:
       db:
         condition: service_healthy
-#    environment:
+    environment:
+      eureka.client.serviceUrl.defaultZone: http://discovery-server:8761/eureka/
 #      SPRING_DATASOURCE_URL: jdbc:mysql://db:3306/myshop
 #      SPRING_DATASOURCE_USERNAME: root
 #      SPRING_DATASOURCE_PASSWORD: 1234
@@ -56,7 +58,8 @@ services:
         condition: service_healthy
     env_file:
       - .env
-#    environment:
+    environment:
+      eureka.client.serviceUrl.defaultZone: http://discovery-server:8761/eureka/
 #      SPRING_DATASOURCE_URL: jdbc:mysql://db:3306/myshop
 #      SPRING_DATASOURCE_USERNAME: root
 #      SPRING_DATASOURCE_PASSWORD: 1234
@@ -74,7 +77,8 @@ services:
         condition: service_healthy
     env_file:
       - .env
-#    environment:
+    environment:
+      eureka.client.serviceUrl.defaultZone: http://discovery-server:8761/eureka/
 #      SPRING_DATASOURCE_URL: jdbc:mysql://db:3306/myshop
 #      SPRING_DATASOURCE_USERNAME: root
 #      SPRING_DATASOURCE_PASSWORD: 1234
@@ -87,12 +91,14 @@ services:
       dockerfile: Dockerfile
     ports:
       - "8084:8084"
+    environment:
+      eureka.client.serviceUrl.defaultZone: http://discovery-server:8761/eureka/
 #    networks:
 #      - my-network
 
 volumes:
   mysql_data_retry:
-
+#
 #networks:
 #  my-network:
 #    driver: bridge
@@ -103,4 +109,3 @@ volumes:
 #    ports:
 #      - "6379:6379"
 #    restart: always
-
