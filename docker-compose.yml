@@ -2,7 +2,6 @@ version: '3.8'
 services:
   db:
     image: mysql:8.0
-#    container_name: my-sql-server
     environment:
       MYSQL_ROOT_PASSWORD: 1234
       MYSQL_DATABASE: myshop
@@ -15,18 +14,13 @@ services:
       interval: 10s
       timeout: 5s
       retries: 3
-#    networks:
-#      - my-network
 
   discovery-server:
     build:
       context: ./discovery-server
       dockerfile: Dockerfile
-#    hostname: 172.30.1.254
     ports:
       - "8761:8761"
-#    networks:
-#      - my-network
 
   user-service:
     build:
@@ -39,13 +33,8 @@ services:
         condition: service_healthy
     environment:
       eureka.client.serviceUrl.defaultZone: http://discovery-server:8761/eureka/
-#      SPRING_DATASOURCE_URL: jdbc:mysql://db:3306/myshop
-#      SPRING_DATASOURCE_USERNAME: root
-#      SPRING_DATASOURCE_PASSWORD: 1234
     env_file:
       - .env
-#    networks:
-#      - my-network
 
   product-service:
     build:
@@ -60,11 +49,6 @@ services:
       - .env
     environment:
       eureka.client.serviceUrl.defaultZone: http://discovery-server:8761/eureka/
-#      SPRING_DATASOURCE_URL: jdbc:mysql://db:3306/myshop
-#      SPRING_DATASOURCE_USERNAME: root
-#      SPRING_DATASOURCE_PASSWORD: 1234
-#    networks:
-#      - my-network
 
   order-service:
     build:
@@ -79,11 +63,6 @@ services:
       - .env
     environment:
       eureka.client.serviceUrl.defaultZone: http://discovery-server:8761/eureka/
-#      SPRING_DATASOURCE_URL: jdbc:mysql://db:3306/myshop
-#      SPRING_DATASOURCE_USERNAME: root
-#      SPRING_DATASOURCE_PASSWORD: 1234
-#    networks:
-#      - my-network
 
   api-gateway:
     build:
@@ -93,19 +72,17 @@ services:
       - "8084:8084"
     environment:
       eureka.client.serviceUrl.defaultZone: http://discovery-server:8761/eureka/
-#    networks:
-#      - my-network
+
+  redis:
+    image: redis:latest
+    container_name: my-redis-server
+    hostname: redis
+    ports:
+      - "6379:6379"
+    restart: always
+
 
 volumes:
   mysql_data_retry:
-#
-#networks:
-#  my-network:
-#    driver: bridge
 
-#  redis:
-#    image: redis:latest
-#    container_name: my-redis-server
-#    ports:
-#      - "6379:6379"
-#    restart: always
+
