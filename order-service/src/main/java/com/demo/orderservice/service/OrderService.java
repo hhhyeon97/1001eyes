@@ -41,6 +41,7 @@ public class OrderService {
 
     private static final String STOCK_RECOVERY_KEY_PREFIX = "stock_recovery:";
 
+    // 주문 조회
     public List<OrderDto> getOrdersByUserAsDto(String userId) {
         List<Order> orders = orderRepository.findByUserId(userId);
 
@@ -78,7 +79,6 @@ public class OrderService {
         }).collect(Collectors.toList());
 
     }
-
 
     // todo : 리팩토링
     @Transactional // 트랜잭션 관리 적용
@@ -196,9 +196,6 @@ public class OrderService {
     }
 
 
-
-    // =======================================================
-
     @Transactional
     public Long prepareOrder(String userId, List<PrepareOrderRequestDto> prepareOrderRequestDtoList) {
         // 1. 주문에 대한 고유한 키 생성 (Long)
@@ -206,7 +203,6 @@ public class OrderService {
         if (orderKey == null) {
             throw new IllegalStateException("주문 키 생성에 실패했습니다.");
         }
-
         // 2. 각 상품에 대해 재고 확인 및 차감
         for (PrepareOrderRequestDto requestDto : prepareOrderRequestDtoList) {
             Long productId = requestDto.getProductId();
@@ -228,20 +224,17 @@ public class OrderService {
                 // Redis에 재고 정보 캐싱 (초기값 설정)
                 redisTemplate.opsForValue().set(stockKey, currentStock);
             }
-
             // 재고가 부족한 경우 예외 처리
             if (currentStock < quantityToOrder) {
                 throw new IllegalArgumentException("상품 재고가 부족합니다: " + productId);
             }
-
             // 재고 차감 (Redis에서)
             redisTemplate.opsForValue().decrement(stockKey, quantityToOrder);
-
             // ProductServiceClient를 사용하여 실제 DB의 재고도 업데이트
-            productServiceClient.updateProductStock(productId, currentStock - quantityToOrder);
+            productServiceClient.updateProductStock(productId, (currentStock - quantityToOrder));
         }
 
-        // 3. 주문 객체 생성 (임시, 실제 DB에는 저장하지 않음)
+        // 3. 주문 객체 생성 (레디스에 담을 임시 dto 객체)
         PrepareOrderDto prepareOrderDto = new PrepareOrderDto();
         prepareOrderDto.setUserId(userId);
         prepareOrderDto.setOrderId(orderKey);
@@ -261,14 +254,12 @@ public class OrderService {
         if (paymentKey == null) {
             throw new IllegalStateException("결제 키 생성에 실패했습니다.");
         }
-
-        // 2. 결제 객체 생성 (임시 ! 실제 db x )
+        // 2. 결제 객체 생성 (레디스에 담을 임시 dto 객체)
         PaymentDto paymentDto = new PaymentDto();
-        paymentDto.setPaymentId(paymentKey); // Long 타입 사용
+        paymentDto.setPaymentId(paymentKey);
         paymentDto.setUserId(userId);
         paymentDto.setPaymentItems(paymentRequestDtoList);
         paymentDto.setCreatedAt(LocalDateTime.now());
-
         // 3. 레디스에 결제 객체 저장
         redisTemplate.opsForHash().put("payments", paymentKey.toString(), paymentDto);
 

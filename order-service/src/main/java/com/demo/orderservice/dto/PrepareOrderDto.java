@@ -11,8 +11,6 @@ import java.util.List;
 @Setter
 public class PrepareOrderDto implements Serializable {
 
-    private static final long serialVersionUID = 1L;
-
     private Long orderId;
     private String userId;
     private List<PrepareOrderRequestDto> orderItems;

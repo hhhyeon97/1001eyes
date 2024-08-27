@@ -11,6 +11,5 @@ public class PrepareOrderRequestDto {
 
     private Long productId;
     private Integer quantity;
-    private LocalDateTime createTime;
-
+    // 결제요청dto랑 동일하게 price도 받아두는게 좋을까?
 }

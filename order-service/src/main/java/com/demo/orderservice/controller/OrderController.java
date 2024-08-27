@@ -27,10 +27,10 @@ public class OrderController {
         return ResponseEntity.ok(orders);
     }
 
-    // 상품 상세 -> 주문 버튼 눌렀을 때
+    // 상품 상세 페이지 -> 주문 버튼 눌렀을 때 ( 주문 진입 )
     // 레디스 조회해서 사려는 개수 차감
     // 상품 id, 상품 개수, 생성 시간 -> 객체로 만들어서 레디스에 저장
-    // -> 주문마다 고유 번호 (중복 x) 주고 주문 객체의 키로 쓰기
+    // -> 각 주문 객체마다 고유 번호 주고 주문 객체의 키로 쓰기
     @PostMapping("/prepare")
     public ResponseEntity<?> prepareOrders(@RequestHeader("X-Auth-User-ID") String userId,
                                            @RequestBody List<PrepareOrderRequestDto> prepareOrderRequestDtoList) {
@@ -42,7 +42,7 @@ public class OrderController {
         }
     }
 
-    // 주문 페이지 -> 결제하러 가기 버튼 눌렀을 때
+    // 주문 페이지 -> 결제하러 가기 버튼 눌렀을 때 ( 결제 진입 )
     // 작성한 주문 정보를 레디스에 저장
     @PostMapping("/payment")
     public ResponseEntity<?> paymentOrders(@RequestHeader("X-Auth-User-ID") String userId,
@@ -55,6 +55,7 @@ public class OrderController {
         }
     }
 
+    // =================================================================================
 
 
     /*// 주문 생성

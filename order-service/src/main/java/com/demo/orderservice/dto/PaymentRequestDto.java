@@ -10,6 +10,6 @@ public class PaymentRequestDto {
 
     private String productId;
     private Integer quantity;
-    private Double price;
+    private Integer price;
 
 }

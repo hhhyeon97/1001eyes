@@ -61,7 +61,7 @@ public class OrderStatusScheduler {
             }
         }
 
-        // 'CANCELED' 상태의 주문 목록 처리 (재고 복구)
+       /* // 'CANCELED' 상태의 주문 목록 처리 (재고 복구)
         List<Order> canceledOrders = orderRepository.findByStatus(OrderStatus.CANCELED);
         for (Order order : canceledOrders) {
             if (order.getCancelDate().plusMinutes(1).isBefore(now)) {  // test : 1분 후 재고 복구
@@ -90,7 +90,7 @@ public class OrderStatusScheduler {
                     // 예외 처리 시 주문 상태 변경을 하지 않거나, 상태를 '취소 실패'로 설정하기
                 }
             }
-        }
+        }*/
 
         // 'RETURN_REQUESTED' 상태의 주문 목록 처리
         List<Order> returnRequestedOrders = orderRepository.findByStatus(OrderStatus.RETURN_REQUESTED);
