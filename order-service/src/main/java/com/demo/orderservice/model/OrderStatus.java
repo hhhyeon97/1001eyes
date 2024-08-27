@@ -11,5 +11,5 @@ public enum OrderStatus {
     DELIVERED,         // 배송 완료
     CANCELED,          // 주문 취소됨
     RETURN_REQUESTED,  // 반품 요청됨
-    RETURNED           // 반품 완료
+    RETURNED           // 주문 취소 후 재고 복구 완료/반품 요청 재고 복구 완료
 }

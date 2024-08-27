@@ -31,6 +31,7 @@ public class Order {
     private LocalDateTime orderDate;
     private LocalDateTime deliveryDate;
     private LocalDateTime returnRequestDate;
+    private LocalDateTime cancelDate;
 
     private Integer totalPrice;
 
