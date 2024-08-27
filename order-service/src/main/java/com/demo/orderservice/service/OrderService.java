@@ -1,17 +1,14 @@
 package com.demo.orderservice.service;
 
 import com.demo.orderservice.client.ProductServiceClient;
-import com.demo.orderservice.dto.OrderDto;
-import com.demo.orderservice.dto.OrderItemDto;
-import com.demo.orderservice.dto.ProductResponseDto;
+import com.demo.orderservice.dto.*;
 import com.demo.orderservice.model.Order;
 import com.demo.orderservice.model.OrderItem;
 import com.demo.orderservice.model.OrderStatus;
 import com.demo.orderservice.repository.OrderRepository;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.data.redis.core.StringRedisTemplate;
+import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.http.ResponseEntity;
-import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -19,7 +16,6 @@ import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Set;
 import java.util.stream.Collectors;
 
 
@@ -29,9 +25,15 @@ public class OrderService {
 
     private final OrderRepository orderRepository;
     private final ProductServiceClient productServiceClient;
-    private final StringRedisTemplate redisTemplate;
+//    private final StringRedisTemplate redisTemplate;
+    private final RedisTemplate<String, Object> redisTemplate;
 
-    public OrderService(OrderRepository orderRepository, ProductServiceClient productServiceClient, StringRedisTemplate redisTemplate) {
+    private static final String ORDER_KEY_SEQUENCE = "order:key:sequence";
+    private static final String PAYMENT_KEY_SEQUENCE = "payment:key:sequence";
+
+
+
+    public OrderService(OrderRepository orderRepository, ProductServiceClient productServiceClient, RedisTemplate<String, Object> redisTemplate) {
         this.orderRepository = orderRepository;
         this.productServiceClient = productServiceClient;
         this.redisTemplate = redisTemplate;
@@ -157,40 +159,8 @@ public class OrderService {
         }
     }
 
-   /* @Transactional // 트랜잭션 관리 적용
-    public void cancelOrder(Long orderId) {
-        Order order = orderRepository.findById(orderId)
-                .orElseThrow(() -> new RuntimeException("해당하는 주문 정보가 없습니다."));
 
-        // 상태가 '배송중' 이상인 경우 취소 불가
-        if (order.getStatus() != OrderStatus.PENDING) {
-            throw new RuntimeException("이미 배송 중이거나 배달 중이므로 주문을 취소할 수 없습니다.");
-        }
-
-        // 재고 복구
-        for (OrderItem item : order.getItems()) {
-            ResponseEntity<ProductResponseDto> responseEntity = productServiceClient.getProductById(item.getProductId());
-
-            if (responseEntity == null || !responseEntity.getStatusCode().is2xxSuccessful()) {
-                throw new RuntimeException("상품 정보를 가져올 수 없습니다: " + item.getProductId());
-            }
-
-            ProductResponseDto productDto = responseEntity.getBody();
-            if (productDto == null) {
-                throw new RuntimeException("상품 정보를 가져올 수 없습니다: " + item.getProductId());
-            }
-
-            // 재고 복구
-            int updatedStock = productDto.getStock() + item.getQuantity();
-            productServiceClient.updateProductStock(productDto.getId(), updatedStock);
-        }
-
-        // 주문 상태를 '취소됨'으로 변경
-        order.setStatus(OrderStatus.CANCELED);
-        orderRepository.save(order);
-    }*/
-
-    // test
+    // 주문 취소
     @Transactional
     public void cancelOrder(Long orderId) {
         Order order = orderRepository.findById(orderId)
@@ -211,7 +181,7 @@ public class OrderService {
         redisTemplate.opsForValue().set(STOCK_RECOVERY_KEY_PREFIX + orderId, recoveryTimeString);
     }
 
-    //    @Scheduled(fixedRate = 24 * 60 * 60 * 1000) // 매일 실행
+  /*  //    @Scheduled(fixedRate = 24 * 60 * 60 * 1000) // 매일 실행
     @Scheduled(fixedRate = 60 * 1000) // 매분 실행
     @Transactional // 트랜잭션 범위 내에서 실행되도록 보장
     public void recoverStock() {
@@ -243,8 +213,9 @@ public class OrderService {
             }
         }
         log.info("재고 복구 스케줄러 종료 시간 : {}", LocalDateTime.now());
-    }
+    }*/
 
+    /*// 재고 복구
     @Transactional
     public void recoverOrderStock(Long orderId) {
         Order order = orderRepository.findById(orderId)
@@ -266,7 +237,7 @@ public class OrderService {
             int updatedStock = productDto.getStock() + item.getQuantity();
             productServiceClient.updateProductStock(productDto.getId(), updatedStock);
         }
-    }
+    }*/
 
 
     // 반품 요청
@@ -288,6 +259,86 @@ public class OrderService {
 
         // 재고 변경은 스케줄러에서 처리하므로 여기서는 제외
         orderRepository.save(order);
+    }
+
+
+
+    // =======================================================
+
+    @Transactional
+    public Long prepareOrder(String userId, List<PrepareOrderRequestDto> prepareOrderRequestDtoList) {
+        // 1. 주문에 대한 고유한 키 생성 (Long)
+        Long orderKey = redisTemplate.opsForValue().increment(ORDER_KEY_SEQUENCE);
+        if (orderKey == null) {
+            throw new IllegalStateException("주문 키 생성에 실패했습니다.");
+        }
+
+        // 2. 각 상품에 대해 재고 확인 및 차감
+        for (PrepareOrderRequestDto requestDto : prepareOrderRequestDtoList) {
+            Long productId = requestDto.getProductId();
+            Integer quantityToOrder = requestDto.getQuantity();
+            String stockKey = "stock:" + productId;
+
+            // 레디스에서 재고 조회
+            Integer currentStock = (Integer) redisTemplate.opsForValue().get(stockKey);
+
+            // Redis에 재고 정보가 없으면 ProductService를 통해 재고 조회
+            if (currentStock == null) {
+                // ProductServiceClient를 사용하여 실제 DB에서 재고 조회
+                ProductResponseDto productResponse = productServiceClient.getProductById(productId).getBody();
+                if (productResponse == null) {
+                    throw new IllegalArgumentException("상품을 찾을 수 없습니다: " + productId);
+                }
+                currentStock = productResponse.getStock(); // 상품의 실제 재고
+
+                // Redis에 재고 정보 캐싱 (초기값 설정)
+                redisTemplate.opsForValue().set(stockKey, currentStock);
+            }
+
+            // 재고가 부족한 경우 예외 처리
+            if (currentStock < quantityToOrder) {
+                throw new IllegalArgumentException("상품 재고가 부족합니다: " + productId);
+            }
+
+            // 재고 차감 (Redis에서)
+            redisTemplate.opsForValue().decrement(stockKey, quantityToOrder);
+
+            // ProductServiceClient를 사용하여 실제 DB의 재고도 업데이트
+            productServiceClient.updateProductStock(productId, currentStock - quantityToOrder);
+        }
+
+        // 3. 주문 객체 생성 (임시, 실제 DB에는 저장하지 않음)
+        PrepareOrderDto prepareOrderDto = new PrepareOrderDto();
+        prepareOrderDto.setUserId(userId);
+        prepareOrderDto.setOrderId(orderKey);
+        prepareOrderDto.setOrderItems(prepareOrderRequestDtoList);
+        prepareOrderDto.setCreatedAt(LocalDateTime.now());
+
+        // 4. Redis에 주문 객체 저장
+        redisTemplate.opsForHash().put("orders", orderKey.toString(), prepareOrderDto);
+
+        return orderKey; // Long 타입 주문 키 반환
+    }
+
+    @Transactional
+    public Long preparePayment(String userId, List<PaymentRequestDto> paymentRequestDtoList) {
+        // 1. 결제에 대한 고유한 키 생성 (Long)
+        Long paymentKey = redisTemplate.opsForValue().increment(PAYMENT_KEY_SEQUENCE);
+        if (paymentKey == null) {
+            throw new IllegalStateException("결제 키 생성에 실패했습니다.");
+        }
+
+        // 2. 결제 객체 생성 (임시 ! 실제 db x )
+        PaymentDto paymentDto = new PaymentDto();
+        paymentDto.setPaymentId(paymentKey); // Long 타입 사용
+        paymentDto.setUserId(userId);
+        paymentDto.setPaymentItems(paymentRequestDtoList);
+        paymentDto.setCreatedAt(LocalDateTime.now());
+
+        // 3. 레디스에 결제 객체 저장
+        redisTemplate.opsForHash().put("payments", paymentKey.toString(), paymentDto);
+
+        return paymentKey;  // Long 타입 결제 키 반환
     }
 
 }
