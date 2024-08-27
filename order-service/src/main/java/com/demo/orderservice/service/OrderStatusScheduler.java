@@ -61,6 +61,37 @@ public class OrderStatusScheduler {
             }
         }
 
+       /* // 'CANCELED' 상태의 주문 목록 처리 (재고 복구)
+        List<Order> canceledOrders = orderRepository.findByStatus(OrderStatus.CANCELED);
+        for (Order order : canceledOrders) {
+            if (order.getCancelDate().plusMinutes(1).isBefore(now)) {  // test : 1분 후 재고 복구
+                try {
+                    for (OrderItem item : order.getItems()) {
+                        ResponseEntity<ProductResponseDto> responseEntity = productServiceClient.getProductById(item.getProductId());
+                        if (responseEntity == null || !responseEntity.getStatusCode().is2xxSuccessful()) {
+                            throw new RuntimeException("상품 정보를 가져올 수 없습니다: " + item.getProductId());
+                        }
+
+                        ProductResponseDto productDto = responseEntity.getBody();
+                        if (productDto == null) {
+                            throw new RuntimeException("상품 정보를 가져올 수 없습니다: " + item.getProductId());
+                        }
+
+                        // 재고 복구
+                        int updatedStock = productDto.getStock() + item.getQuantity();
+                        productServiceClient.updateProductStock(productDto.getId(), updatedStock);
+                    }
+                    // 상태를 'RETURNED'로 변경
+                    order.setStatus(OrderStatus.RETURNED);
+                    orderRepository.save(order);
+                    log.info("주문 ID {}의 상태가 RETURNED로 변경 + 재고 업데이트 완료", order.getId());
+                } catch (Exception e) {
+                    log.error("주문 ID {}의 반품 처리 중 오류 발생: {}", order.getId(), e.getMessage());
+                    // 예외 처리 시 주문 상태 변경을 하지 않거나, 상태를 '취소 실패'로 설정하기
+                }
+            }
+        }*/
+
         // 'RETURN_REQUESTED' 상태의 주문 목록 처리
         List<Order> returnRequestedOrders = orderRepository.findByStatus(OrderStatus.RETURN_REQUESTED);
         for (Order order : returnRequestedOrders) {
