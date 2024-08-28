@@ -228,11 +228,13 @@ public class OrderService {
             if (currentStock < quantityToOrder) {
                 throw new IllegalArgumentException("상품 재고가 부족합니다: " + productId);
             }
-            // 재고 차감 (Redis에서)
+            // Redis에서만 재고 차감
             redisTemplate.opsForValue().decrement(stockKey, quantityToOrder);
-            // ProductServiceClient를 사용하여 실제 DB의 재고도 업데이트
-            productServiceClient.updateProductStock(productId, (currentStock - quantityToOrder));
-        }
+        }// todo : 실제 db에 재고 차감 x -> 레디스가 들고 있다가 ...현재 로직 수정 필요 !
+        // 위 로직은 레디스에 재고 차감도 하고 실제 db 재고도 차감해버리고 있음 오마이............!
+        // 궁금증 -> 현재 레디스에 orders, payments 안에 하나씩 데이터 쌓이고 있는데 드는 생각이
+        // orderDto, paymentDto 중복적인 데이터를 두번 담는 것 같은 ??... 주문 데이터만 담고 그걸 결제 페이지 갈 때도 물고 가면 되지 않을랑가 ?
+
 
         // 3. 주문 객체 생성 (레디스에 담을 임시 dto 객체)
         PrepareOrderDto prepareOrderDto = new PrepareOrderDto();
@@ -240,6 +242,7 @@ public class OrderService {
         prepareOrderDto.setOrderId(orderKey);
         prepareOrderDto.setOrderItems(prepareOrderRequestDtoList);
         prepareOrderDto.setCreatedAt(LocalDateTime.now());
+        prepareOrderDto.setStatus(OrderStatus.PENDING);
 
         // 4. Redis에 주문 객체 저장
         redisTemplate.opsForHash().put("orders", orderKey.toString(), prepareOrderDto);
