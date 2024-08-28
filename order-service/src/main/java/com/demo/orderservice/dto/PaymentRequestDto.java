@@ -8,8 +8,6 @@ import lombok.Setter;
 @Setter
 public class PaymentRequestDto {
 
-    private String productId;
-    private Integer quantity;
-    private Integer price;
+   private Integer cardNumber;
 
 }

@@ -3,13 +3,12 @@ package com.demo.orderservice.dto;
 import lombok.Getter;
 import lombok.Setter;
 
-import java.time.LocalDateTime;
 
 @Getter
 @Setter
 public class PrepareOrderRequestDto {
-
+    // todo : 추후에 기존 OrderItemDto랑 둘 중에 하나만 남기기 / 여러개 있어서 헷갈림..!
     private Long productId;
     private Integer quantity;
-    // 결제요청dto랑 동일하게 price도 받아두는게 좋을까?
+    private Integer price;
 }
