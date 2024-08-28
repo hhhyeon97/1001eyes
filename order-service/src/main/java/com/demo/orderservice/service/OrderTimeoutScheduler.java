@@ -17,11 +17,13 @@ import java.util.concurrent.TimeUnit;
 public class OrderTimeoutScheduler {
 
     private final RedisTemplate<String, Object> redisTemplate;
+    private final SlackNotifierService slackNotifierService;
     private ObjectMapper objectMapper;
 
-    public OrderTimeoutScheduler(RedisTemplate<String, Object> redisTemplate, ObjectMapper objectMapper) {
+    public OrderTimeoutScheduler(RedisTemplate<String, Object> redisTemplate, ObjectMapper objectMapper, SlackNotifierService slackNotifierService) {
         this.redisTemplate = redisTemplate;
         this.objectMapper = objectMapper;
+        this.slackNotifierService = slackNotifierService;
     }
 
     @Scheduled(fixedRate = 60000)  // 1분마다 실행
@@ -62,6 +64,9 @@ public class OrderTimeoutScheduler {
         orderDto.setStatus(OrderStatus.TIME_OUT);
         redisTemplate.opsForHash().put("orders", orderKey, orderDto);
         log.info("Order key {} has been set to TIME_OUT", orderKey);
+
+        // Slack 알림 발송
+        slackNotifierService.sendNotification("Order with key " + orderKey + " has timed out.");
     }
 
 }
