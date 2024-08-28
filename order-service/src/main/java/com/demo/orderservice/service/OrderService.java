@@ -10,6 +10,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.http.ResponseEntity;
+import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -17,6 +18,8 @@ import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Set;
+import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
 
@@ -246,6 +249,9 @@ public class OrderService {
         // 4. Redis에 주문 객체 저장
         redisTemplate.opsForHash().put("orders", orderKey.toString(), prepareOrderDto);
 
+        // ++ 결제에 대한 TTL 설정 (10분 -> 테스트 : 1분)
+        redisTemplate.expire("orders:" + orderKey, 1, TimeUnit.MINUTES);
+
         return orderKey; // Long 타입 주문 키 반환
     }
 
@@ -279,9 +285,11 @@ public class OrderService {
         // 4. Redis에 업데이트된 주문 객체 저장
         redisTemplate.opsForHash().put("orders", orderKey.toString(), orderDto);
 
+        // ++ 주문에 대한 TTL 설정 (10분 -> 테스트 : 1분)
+        redisTemplate.expire("orders:" + orderKey, 1, TimeUnit.MINUTES);
+
         return orderKey;  // Long 타입 결제 키 반환
     }
-
 
 
 }

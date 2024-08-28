@@ -27,6 +27,8 @@ public class OrderController {
         return ResponseEntity.ok(orders);
     }
 
+    // ★ 구매 프로세스
+    // 1. ( 1 ~ 3번 api는 한 뭉텅이 흐름 )
     // 상품 상세 페이지 -> 주문 버튼 눌렀을 때 ( 주문 진입 )
     // 레디스 조회해서 사려는 개수 차감
     // 상품 id, 상품 개수, 생성 시간 -> 객체로 만들어서 레디스에 저장
@@ -42,6 +44,7 @@ public class OrderController {
         }
     }
 
+    // 2.
     // 주문 페이지 -> 결제하러 가기 버튼 눌렀을 때 ( 결제 진입 )
     // 작성한 주문 정보를 레디스에 저장
     @PostMapping("/payment")
