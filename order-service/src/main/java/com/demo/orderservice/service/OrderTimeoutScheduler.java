@@ -24,7 +24,7 @@ public class OrderTimeoutScheduler {
         this.objectMapper = objectMapper;
     }
 
-    @Scheduled(fixedRate = 60000)  // test - > 1분마다 실행
+    @Scheduled(fixedRate = 60000)  // 1분마다 실행
     public void checkForTimeoutOrders() {
         log.info("Checking for timeout orders...");
 
@@ -50,13 +50,18 @@ public class OrderTimeoutScheduler {
                 log.info("Order key {} has TTL: {}", orderKey, ttl);
 
                 if (ttl != null && ttl <= 0) {
-                    // 상태를 TIME_OUT으로 변경
-                    orderDto.setStatus(OrderStatus.TIME_OUT);
-                    redisTemplate.opsForHash().put("orders", orderKey, orderDto);
-                    log.info("Order key {} has been set to TIME_OUT", orderKey);
+                    updateOrderStatusToTimeout(orderKey, orderDto);
                 }
             }
         }
+    }
+
+    // 주문 상태를 TIME_OUT으로 업데이트하는 메서드
+    private void updateOrderStatusToTimeout(String orderKey, PrepareOrderDto orderDto) {
+        // 상태를 TIME_OUT으로 변경
+        orderDto.setStatus(OrderStatus.TIME_OUT);
+        redisTemplate.opsForHash().put("orders", orderKey, orderDto);
+        log.info("Order key {} has been set to TIME_OUT", orderKey);
     }
 
 }
