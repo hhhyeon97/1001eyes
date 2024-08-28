@@ -1,5 +1,6 @@
 package com.demo.userservice.model;
 
+import com.fasterxml.jackson.annotation.JsonBackReference;
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -25,6 +26,7 @@ public class Address {
 
     @ManyToOne
     @JoinColumn(name = "user_id") // 외래 키 열 이름 명시
+    @JsonBackReference
     private User user;
 
     // 생성자

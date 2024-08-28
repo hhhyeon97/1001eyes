@@ -4,6 +4,7 @@ package com.demo.userservice.service;
 import com.demo.userservice.core.EncryptionUtils;
 import com.demo.userservice.core.jwt.JwtUtil;
 import com.demo.userservice.dto.RegisterRequestDto;
+import com.demo.userservice.dto.UserDto;
 import com.demo.userservice.model.Address;
 import com.demo.userservice.model.User;
 import com.demo.userservice.model.UserRoleEnum;
@@ -230,6 +231,10 @@ public class UserService {
         message.setSubject(subject);
         message.setText(text);
         mailSender.send(message);
+    }
+
+    public UserDto convertToDto(User currentUser) {
+        return new UserDto(currentUser);
     }
 }
 
