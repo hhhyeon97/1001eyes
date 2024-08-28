@@ -233,6 +233,7 @@ public class UserService {
         mailSender.send(message);
     }
 
+    // 유저 정보 dto객체로 반환
     public UserDto convertToDto(User currentUser) {
         return new UserDto(currentUser);
     }
