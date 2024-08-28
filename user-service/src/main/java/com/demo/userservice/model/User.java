@@ -1,5 +1,6 @@
 package com.demo.userservice.model;
 
+import com.fasterxml.jackson.annotation.JsonManagedReference;
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -36,6 +37,7 @@ public class User {
 
     // 하나의 사용자는 여러 주소를 가질 수 있음
     @OneToMany(mappedBy = "user")
+    @JsonManagedReference
     private List<Address> addresses;
 
     private boolean withdraw;

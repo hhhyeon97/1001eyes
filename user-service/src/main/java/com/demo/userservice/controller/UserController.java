@@ -2,6 +2,7 @@ package com.demo.userservice.controller;
 
 import com.demo.userservice.dto.ChangePasswordRequestDto;
 import com.demo.userservice.dto.RegisterRequestDto;
+import com.demo.userservice.dto.UserDto;
 import com.demo.userservice.model.User;
 import com.demo.userservice.security.UserDetailsImpl;
 import com.demo.userservice.service.UserService;
@@ -71,27 +72,18 @@ public class UserController {
         }
     }
 
-    //    // 유저 정보 조회
-//    @GetMapping("/me")
-//    public ResponseEntity<User> getUserDetails(@RequestHeader("X-Auth-User-ID") String userId) {
-//        try {
-//            // 현재 인증된 사용자 정보 가져오기
-//            System.out.println("조회하려는 유저아이디 -> "+userId);
-//            User currentUser = userService.findUserById(userId);
-//            return ResponseEntity.ok(currentUser);
-//        } catch (Exception e) {
-//            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(null);
-//        }
-//    }
-//    @GetMapping("/me")
-//    public ResponseEntity<User> getUserDetails(@RequestHeader(value = "X-Auth-User-ID") String userId) {
-//        try {
-//            // userId를 통해 유저 정보 조회
-//            User currentUser = userService.findUserById(userId);
-//            return ResponseEntity.ok(currentUser);
-//        } catch (Exception e) {
-//            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(null);
-//        }
-//    }
+    // 유저 정보 조회 -> 마이페이지
+    @GetMapping("/me")
+    public ResponseEntity<UserDto> getUserDetails(@RequestHeader(value = "X-Auth-User-ID") String userId) {
+        try {
+            // userId를 통해 유저 정보 조회
+            User currentUser = userService.findUserById(userId);
+            // User 객체를 UserDTO로 변환
+            UserDto userDto = userService.convertToDto(currentUser);
+            return ResponseEntity.ok(userDto);
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(null);
+        }
+    }
 
 }
