@@ -24,44 +24,39 @@ public class OrderTimeoutScheduler {
         this.objectMapper = objectMapper;
     }
 
-    @Scheduled(fixedRate = 60000) // 매 1분마다 실행
-    public void checkAndExpireOrders() {
-        log.info("Order timeout check started.");
+    @Scheduled(fixedRate = 60000)  // test - > 1분마다 실행
+    public void checkForTimeoutOrders() {
+        log.info("Checking for timeout orders...");
 
         Set<Object> orderKeys = redisTemplate.opsForHash().keys("orders");
-
         if (orderKeys != null) {
             for (Object orderKeyObj : orderKeys) {
                 String orderKey = orderKeyObj.toString();
-                // 남은 TTL 확인
-                Long ttl = redisTemplate.getExpire(orderKey, TimeUnit.SECONDS);
+
+                Object orderObject = redisTemplate.opsForHash().get("orders", orderKey);
+                if (orderObject == null) {
+                    continue;
+                }
+
+                // LinkedHashMap을 PrepareOrderDto로 변환
+                PrepareOrderDto orderDto = objectMapper.convertValue(orderObject, PrepareOrderDto.class);
+
+                // 이미 TIME_OUT 상태이면 로그를 남기지 않고 스킵
+                if (OrderStatus.TIME_OUT.equals(orderDto.getStatus())) {
+                    continue;
+                }
+
+                Long ttl = redisTemplate.getExpire("orders:" + orderKey, TimeUnit.SECONDS);
+                log.info("Order key {} has TTL: {}", orderKey, ttl);
+
                 if (ttl != null && ttl <= 0) {
-                    log.info("Order key {} has expired TTL.", orderKey);
-
-                    // 주문 객체 조회
-                    Object orderObject = redisTemplate.opsForHash().get("orders", orderKey);
-                    if (orderObject != null) {
-                        PrepareOrderDto orderDto = objectMapper.convertValue(orderObject, PrepareOrderDto.class);
-
-                        // 상태를 TIME_OUT으로 업데이트
-                        orderDto.setStatus(OrderStatus.TIME_OUT);
-                        log.info("Order {} is set to TIME_OUT status.", orderDto.getOrderId());
-
-                        // 갱신된 주문 객체를 다시 Redis에 저장
-                        redisTemplate.opsForHash().put("orders", orderKey, orderDto);
-                        log.info("Order {} has been updated to TIME_OUT status in Redis.", orderDto.getOrderId());
-                    } else {
-                        log.warn("Order object not found for key: {}", orderKey);
-                    }
-                } else {
-                    log.info("Order key {} is still active with TTL: {}", orderKey, ttl);
+                    // 상태를 TIME_OUT으로 변경
+                    orderDto.setStatus(OrderStatus.TIME_OUT);
+                    redisTemplate.opsForHash().put("orders", orderKey, orderDto);
+                    log.info("Order key {} has been set to TIME_OUT", orderKey);
                 }
             }
-        } else {
-            log.info("No orders found in Redis.");
         }
-
-        log.info("Order timeout check completed.");
     }
 
 }
