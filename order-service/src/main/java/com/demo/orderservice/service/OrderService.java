@@ -6,6 +6,7 @@ import com.demo.orderservice.model.Order;
 import com.demo.orderservice.model.OrderItem;
 import com.demo.orderservice.model.OrderStatus;
 import com.demo.orderservice.repository.OrderRepository;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.http.ResponseEntity;
@@ -27,19 +28,18 @@ public class OrderService {
     private final ProductServiceClient productServiceClient;
 //    private final StringRedisTemplate redisTemplate;
     private final RedisTemplate<String, Object> redisTemplate;
-
+    private ObjectMapper objectMapper;
     private static final String ORDER_KEY_SEQUENCE = "order:key:sequence";
-    private static final String PAYMENT_KEY_SEQUENCE = "payment:key:sequence";
+    private static final String STOCK_RECOVERY_KEY_PREFIX = "stock_recovery:";
 
 
-
-    public OrderService(OrderRepository orderRepository, ProductServiceClient productServiceClient, RedisTemplate<String, Object> redisTemplate) {
+    public OrderService(OrderRepository orderRepository, ProductServiceClient productServiceClient, RedisTemplate<String, Object> redisTemplate
+    , ObjectMapper objectMapper) {
         this.orderRepository = orderRepository;
         this.productServiceClient = productServiceClient;
         this.redisTemplate = redisTemplate;
+        this.objectMapper = objectMapper;
     }
-
-    private static final String STOCK_RECOVERY_KEY_PREFIX = "stock_recovery:";
 
     // 주문 조회
     public List<OrderDto> getOrdersByUserAsDto(String userId) {
@@ -81,7 +81,7 @@ public class OrderService {
     }
 
     // todo : 리팩토링
-    @Transactional // 트랜잭션 관리 적용
+   /* @Transactional // 트랜잭션 관리 적용
     public Order createOrder(String userId, List<OrderItemDto> orderItems) {
         if (orderItems == null || orderItems.isEmpty()) {
             throw new RuntimeException("주문 항목이 비어있습니다.");
@@ -157,7 +157,7 @@ public class OrderService {
             log.error("주문 생성 중 오류 발생", e);
             throw e;
         }
-    }
+    }*/
 
     // 주문 취소 리팩토링 1 : 기존 - 주문 취소시 바로 재고 복구 -> 변경 - 스케줄러로 며칠 있다 복구되게 설정 (캔슬날짜 컬럼 추가)
     @Transactional
@@ -195,7 +195,7 @@ public class OrderService {
         orderRepository.save(order);
     }
 
-
+    // 주문 진입 ( 실제 db 반영 x -> 레디스에 저장 )
     @Transactional
     public Long prepareOrder(String userId, List<PrepareOrderRequestDto> prepareOrderRequestDtoList) {
         // 1. 주문에 대한 고유한 키 생성 (Long)
@@ -203,6 +203,10 @@ public class OrderService {
         if (orderKey == null) {
             throw new IllegalStateException("주문 키 생성에 실패했습니다.");
         }
+        // ++ 주문과 사용자 간의 매핑 저장
+        String userOrderKey = "user_orders:" + userId;
+        redisTemplate.opsForValue().set(userOrderKey, orderKey.toString());
+
         // 2. 각 상품에 대해 재고 확인 및 차감
         for (PrepareOrderRequestDto requestDto : prepareOrderRequestDtoList) {
             Long productId = requestDto.getProductId();
@@ -230,12 +234,7 @@ public class OrderService {
             }
             // Redis에서만 재고 차감
             redisTemplate.opsForValue().decrement(stockKey, quantityToOrder);
-        }// todo : 실제 db에 재고 차감 x -> 레디스가 들고 있다가 ...현재 로직 수정 필요 !
-        // 위 로직은 레디스에 재고 차감도 하고 실제 db 재고도 차감해버리고 있음 오마이............!
-        // 궁금증 -> 현재 레디스에 orders, payments 안에 하나씩 데이터 쌓이고 있는데 드는 생각이
-        // orderDto, paymentDto 중복적인 데이터를 두번 담는 것 같은 ??... 주문 데이터만 담고 그걸 결제 페이지 갈 때도 물고 가면 되지 않을랑가 ?
-
-
+        }
         // 3. 주문 객체 생성 (레디스에 담을 임시 dto 객체)
         PrepareOrderDto prepareOrderDto = new PrepareOrderDto();
         prepareOrderDto.setUserId(userId);
@@ -250,23 +249,39 @@ public class OrderService {
         return orderKey; // Long 타입 주문 키 반환
     }
 
+    // 결제 진입 ( 실제 db 반영 x -> 레디스에 저장 )
     @Transactional
     public Long preparePayment(String userId, List<PaymentRequestDto> paymentRequestDtoList) {
-        // 1. 결제에 대한 고유한 키 생성 (Long)
-        Long paymentKey = redisTemplate.opsForValue().increment(PAYMENT_KEY_SEQUENCE);
-        if (paymentKey == null) {
-            throw new IllegalStateException("결제 키 생성에 실패했습니다.");
-        }
-        // 2. 결제 객체 생성 (레디스에 담을 임시 dto 객체)
-        PaymentDto paymentDto = new PaymentDto();
-        paymentDto.setPaymentId(paymentKey);
-        paymentDto.setUserId(userId);
-        paymentDto.setPaymentItems(paymentRequestDtoList);
-        paymentDto.setCreatedAt(LocalDateTime.now());
-        // 3. 레디스에 결제 객체 저장
-        redisTemplate.opsForHash().put("payments", paymentKey.toString(), paymentDto);
+        // 1. userId를 사용하여 orderKey를 찾기
+        String userOrderKey = "user_orders:" + userId;
+        String orderKeyStr = (String) redisTemplate.opsForValue().get(userOrderKey);
 
-        return paymentKey;  // Long 타입 결제 키 반환
+        if (orderKeyStr == null) {
+            throw new IllegalArgumentException("해당 사용자의 주문이 없습니다: " + userId);
+        }
+
+        Long orderKey = Long.parseLong(orderKeyStr);
+
+        // 2. Redis에서 주문 객체 조회
+        Object orderObject = redisTemplate.opsForHash().get("orders", orderKey.toString());
+        if (orderObject == null) {
+            throw new IllegalArgumentException("주문을 찾을 수 없습니다: " + orderKey);
+        }
+
+        // ++ LinkedHashMap을 PrepareOrderDto로 변환
+        PrepareOrderDto orderDto = objectMapper.convertValue(orderObject, PrepareOrderDto.class);
+
+        // 3. 결제 정보 추가 및 결제 상태로 전환
+        orderDto.setPaymentItems(paymentRequestDtoList);
+        orderDto.setStatus(OrderStatus.PAYING);
+        orderDto.setPaymentAt(LocalDateTime.now());
+
+        // 4. Redis에 업데이트된 주문 객체 저장
+        redisTemplate.opsForHash().put("orders", orderKey.toString(), orderDto);
+
+        return orderKey;  // Long 타입 결제 키 반환
     }
+
+
 
 }
