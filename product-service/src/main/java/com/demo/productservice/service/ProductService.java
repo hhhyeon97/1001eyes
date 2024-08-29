@@ -3,7 +3,6 @@ package com.demo.productservice.service;
 import com.demo.productservice.dto.ProductRequestDto;
 import com.demo.productservice.model.Product;
 import com.demo.productservice.repository.ProductRepository;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Service;
 
@@ -77,4 +76,25 @@ public class ProductService {
 //        String key = "product:stock:" + productId;
 //        redisTemplate.opsForValue().set(key, stock);  // Integer로 저장
 //    }
+
+    public void updateProductStock(Long productId, int newStock) {
+        // 1. 상품 정보를 DB에서 조회
+        Product product = productRepository.findById(productId)
+                .orElseThrow(() -> new RuntimeException("상품을 찾을 수 없습니다: " + productId));
+
+        // 2. 상품의 재고 업데이트
+        product.setStock(newStock);
+        productRepository.save(product);
+        // todo : 레디스엔 이때 업데이트 해주면 안 되는 ??..
+        /*
+        ex)
+        1~10번 사용자 / 상품 재고 10개 (1인 1개 구매)
+        1번 유저 결제 완료 -> 오더에서 이 메서드 호출해서 상품 db에 9개로 업데이트
+        -> 근데 아직 결제 완료 안 한 사람들 (그니까 주문 최종 완료 안 된 유저들)이 있는 상태면
+        -> 레디스에 있는 임시 재고랑 상품 db에 있는 재고랑 불일치한 게 맞음
+        -> 그래서 여기서 상품 db 재고 업데이트 될 때 레디스에도 같이 업데이트 해버리면 이상해짐 ...!
+        -> 더 뒤에 온 사람들한테 갑자기 재고가 생겨나 보이는 것처럼 될 수 있는 ?!
+        -> 일단 내가 생각한 게 맞는지 정답인지는 모르겠지만 일단 여기선 레디스 업데이트 해주지 말자 !
+        * */
+    }
 }

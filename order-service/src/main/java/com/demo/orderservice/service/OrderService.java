@@ -295,7 +295,7 @@ public class OrderService {
     // 결제 완료시
     @Transactional
     public ResponseEntity<?> completePayment(String userId) {
-        // 1. userId를 사용하여 orderKey를 찾기
+        // 1. 주문 키와 주문 객체 조회
         String userOrderKey = "user_orders:" + userId;
         String orderKeyStr = (String) redisTemplate.opsForValue().get(userOrderKey);
 
@@ -304,22 +304,21 @@ public class OrderService {
         }
 
         Long orderKey = Long.parseLong(orderKeyStr);
-
-        // 2. Redis에서 주문 객체 조회
         Object orderObject = redisTemplate.opsForHash().get("orders", orderKey.toString());
         if (orderObject == null) {
             return ResponseEntity.badRequest().body("주문을 찾을 수 없습니다.");
         }
 
-        // LinkedHashMap을 PrepareOrderDto로 변환
         PrepareOrderDto orderDto = objectMapper.convertValue(orderObject, PrepareOrderDto.class);
 
         try {
-            // 3. 각 주문 항목의 재고를 확인하고 차감
-            int totalPrice = 0;
-            List<ProductResponseDto> productsToUpdate = new ArrayList<>();
+            // 2. 주문 객체를 실제 주문 테이블에 저장
+            Order order = orderDto.toEntity();
+            order.setStatus(OrderStatus.COMPLETED);  // 주문 상태를 COMPLETED로 설정
+            orderRepository.save(order);
 
-            Set<OrderItem> orderItems = orderDto.toEntity().getItems();
+            // 3. 저장된 주문 정보 기반으로 재고 차감 수행
+            Set<OrderItem> orderItems = order.getItems();
             for (OrderItem item : orderItems) {
                 Long productId = item.getProductId();
                 int quantityOrdered = item.getQuantity();
@@ -335,43 +334,23 @@ public class OrderService {
                     throw new RuntimeException("해당 상품을 찾을 수 없습니다: " + productId);
                 }
 
-                // 재고 확인
-                if (product.getStock() < quantityOrdered) {
+                // 재고 확인 및 차감
+                int updatedStock = product.getStock() - quantityOrdered;
+                if (updatedStock < 0) {
                     throw new RuntimeException("상품 재고 부족: " + productId);
                 }
 
-                // 총 가격 계산
-                totalPrice += product.getPrice() * quantityOrdered;
-                productsToUpdate.add(product);
-            }
-
-            // 모든 재고 확인이 끝난 후 재고 차감
-            for (OrderItem item : orderItems) {
-                Long productId = item.getProductId();
-                int quantityOrdered = item.getQuantity();
-
-                ProductResponseDto product = productsToUpdate.stream()
-                        .filter(p -> p.getId().equals(productId))
-                        .findFirst()
-                        .orElseThrow(() -> new RuntimeException("상품 정보를 찾을 수 없습니다: " + productId));
-
-                int updatedStock = product.getStock() - quantityOrdered;
                 // 재고 차감 요청
                 productServiceClient.updateProductStock(product.getId(), updatedStock);
             }
-
-            // 4. 주문 객체를 실제 주문 테이블에 저장
-            Order order = orderDto.toEntity();
-            order.setTotalPrice(totalPrice);  // 총 가격 설정
-            order.setStatus(OrderStatus.COMPLETED);  // 주문 상태를 COMPLETED로 설정
-            orderRepository.save(order);
-
-            // 5. 주문 성공 후 Redis에서 해당 주문 데이터 삭제
+            // 4. 주문 성공 후 Redis에서 해당 주문 데이터 삭제
             redisTemplate.opsForHash().delete("orders", orderKey.toString());
             redisTemplate.delete(userOrderKey);
 
             return ResponseEntity.ok("결제가 완료되었습니다.");
         } catch (Exception e) {
+            // 예외 발생 시 롤백 자동 수행 (트랜잭션 관리에 의해)
+            log.error("결제 처리 중 오류 발생", e);
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("결제 처리 중 오류가 발생했습니다.");
         }
     }
