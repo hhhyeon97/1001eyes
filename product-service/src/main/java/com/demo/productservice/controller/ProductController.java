@@ -17,6 +17,7 @@ import java.util.stream.Collectors;
 public class ProductController {
 
     private final ProductService productService;
+
     public ProductController(ProductService productService) {
         this.productService = productService;
     }
@@ -52,26 +53,43 @@ public class ProductController {
         }
     }
 
-    // 남은 수량 조회
+    /**
+     * 상품 상세 페이지에서 임시 재고 수량 조회
+     *
+     * @param id 상품 ID
+     * @return 임시 재고 수량
+     */
     @GetMapping("/{id}/stock")
     public ResponseEntity<Integer> getRemainingStock(@PathVariable("id") Long id) {
         int remainingStock = productService.getStockFromRedis(id);
         return ResponseEntity.ok(remainingStock);
     }
 
-    // order-service와 내부 소통 -> 주문 생성시, 상품 반품 완료시 재고 업데이트 api
+//    // order-service와 내부 소통 -> 주문 생성시, 상품 반품 완료시 재고 업데이트 api
+//    @PutMapping("/{id}/stock")
+//    public ResponseEntity<String> updateProductStock(@PathVariable("id") Long id, @RequestParam("stock") int stock) {
+//        productService.updateStockInRedis(id, stock);
+//        // 기존 DB 업데이트 로직 유지
+//        Optional<Product> productOpt = productService.findItemById(id);
+//        if (productOpt.isPresent()) {
+//            Product product = productOpt.get();
+//            product.setStock(stock);
+//            productService.updateStock(product);
+//            return ResponseEntity.ok("재고가 성공적으로 업데이트되었습니다.");
+//        } else {
+//            return ResponseEntity.status(404).body("상품을 찾을 수 없습니다.");
+//        }
+//    }
+
+    // 재고 업데이트할 API
     @PutMapping("/{id}/stock")
     public ResponseEntity<String> updateProductStock(@PathVariable("id") Long id, @RequestParam("stock") int stock) {
-        productService.updateStockInRedis(id, stock);
-        // 기존 DB 업데이트 로직 유지
-        Optional<Product> productOpt = productService.findItemById(id);
-        if (productOpt.isPresent()) {
-            Product product = productOpt.get();
-            product.setStock(stock);
-            productService.updateStock(product);
+        try {
+            // 서비스 레이어를 통해 재고 업데이트
+            productService.updateProductStock(id, stock);
             return ResponseEntity.ok("재고가 성공적으로 업데이트되었습니다.");
-        } else {
-            return ResponseEntity.status(404).body("상품을 찾을 수 없습니다.");
+        } catch (RuntimeException e) {
+            return ResponseEntity.badRequest().body("재고 업데이트 중 오류 발생: " + e.getMessage());
         }
     }
 

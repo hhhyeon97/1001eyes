@@ -14,8 +14,9 @@ public class ProductService {
 
     private final ProductRepository productRepository;
 
-    private final RedisTemplate<String, Integer> redisTemplate;
-    public ProductService(ProductRepository productRepository, RedisTemplate<String, Integer> redisTemplate) {
+    private final RedisTemplate<String, String> redisTemplate;
+
+    public ProductService(ProductRepository productRepository, RedisTemplate<String, String> redisTemplate) {
         this.productRepository = productRepository;
         this.redisTemplate = redisTemplate;
     }
@@ -37,31 +38,63 @@ public class ProductService {
         return productRepository.findById(id);
     }
 
-    // 재고 업데이트 -> Product 객체를 직접 저장
-    public void updateStock(Product product) {
-        productRepository.save(product);
-    }
-
-    // Redis에서 재고 수량 조회
+    /**
+     * Redis에서 임시 재고 수량을 조회
+     * 레디스에 없을 땐 db에서 조회
+     * @param productId 상품 ID
+     * @return 임시 재고 수량
+     */
     public int getStockFromRedis(Long productId) {
-        String key = "product:stock:" + productId;
-        Integer stock = redisTemplate.opsForValue().get(key);  // Integer로 명시적 캐스팅
-        if (stock != null) {
-            return stock;
+        // Redis에서 재고 조회
+        String stockStr = redisTemplate.opsForValue().get("stock:" + productId);
+        if (stockStr != null) {
+            try {
+                return Integer.parseInt(stockStr);
+            } catch (NumberFormatException e) {
+                // 로그를 남기거나 예외 처리 (선택 사항)
+                return 0;  // 기본값으로 반환 또는 예외 발생
+            }
         }
-        // Redis에 없으면 DB에서 조회
-        Optional<Product> product = productRepository.findById(productId);
-        if (product.isPresent()) {
-            int dbStock = product.get().getStock();
-            redisTemplate.opsForValue().set(key, dbStock);
-            return dbStock;
+        // Redis에 재고 정보가 없는 경우 DB에서 조회
+        Product product = productRepository.findById(productId).orElse(null);
+        if (product != null) {
+            // 데이터베이스에서 조회한 재고를 Redis에 캐싱
+            redisTemplate.opsForValue().set("stock:" + productId, String.valueOf(product.getStock()));
+            return product.getStock();
         }
-        return 0; // or throw exception
+        return 0;  // 제품이 없는 경우 기본값 반환 또는 예외 처리
     }
 
-    // Redis에 재고 수량 업데이트
-    public void updateStockInRedis(Long productId, int stock) {
-        String key = "product:stock:" + productId;
-        redisTemplate.opsForValue().set(key, stock);  // Integer로 저장
+
+//    // 재고 업데이트 -> Product 객체를 직접 저장
+//    public void updateStock(Product product) {
+//        productRepository.save(product);
+//    }
+//
+//    // Redis에 재고 수량 업데이트
+//    public void updateStockInRedis(Long productId, int stock) {
+//        String key = "product:stock:" + productId;
+//        redisTemplate.opsForValue().set(key, stock);  // Integer로 저장
+//    }
+
+    public void updateProductStock(Long productId, int newStock) {
+        // 1. 상품 정보를 DB에서 조회
+        Product product = productRepository.findById(productId)
+                .orElseThrow(() -> new RuntimeException("상품을 찾을 수 없습니다: " + productId));
+
+        // 2. 상품의 재고 업데이트
+        product.setStock(newStock);
+        productRepository.save(product);
+        // todo : 레디스엔 이때 업데이트 해주면 안 되는 ??..
+        /*
+        ex)
+        1~10번 사용자 / 상품 재고 10개 (1인 1개 구매)
+        1번 유저 결제 완료 -> 오더에서 이 메서드 호출해서 상품 db에 9개로 업데이트
+        -> 근데 아직 결제 완료 안 한 사람들 (그니까 주문 최종 완료 안 된 유저들)이 있는 상태면
+        -> 레디스에 있는 임시 재고랑 상품 db에 있는 재고랑 불일치한 게 맞음
+        -> 그래서 여기서 상품 db 재고 업데이트 될 때 레디스에도 같이 업데이트 해버리면 이상해짐 ...!
+        -> 더 뒤에 온 사람들한테 갑자기 재고가 생겨나 보이는 것처럼 될 수 있는 ?!
+        -> 일단 내가 생각한 게 맞는지 정답인지는 모르겠지만 일단 여기선 레디스 업데이트 해주지 말자 !
+        * */
     }
 }

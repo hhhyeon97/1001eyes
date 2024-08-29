@@ -58,6 +58,19 @@ public class OrderController {
         }
     }
 
+    // 3.
+    // 결제 완료시
+    // 실제 db에 주문 데이터 생성
+    // 실패한 결제에 대한 처리는 추가 요구사항에 따라 달라질 수 있음
+    // 필요하다면 Redis에서 삭제하거나 유지할 수 있음
+    // 일단 이 프로젝트에서는 실제 결제 API 붙이지 않을 것이므로
+    // 결제 실패시 프론트단에서 메세지랑 상품페이지로 돌려보내기 OR 알림 보내주기
+    @PostMapping("/complete-payment")
+    public ResponseEntity<?> completePayment(@RequestHeader("X-Auth-User-ID") String userId) {
+        return orderService.completePayment(userId);
+    }
+
+
     // =================================================================================
 
 

@@ -28,7 +28,7 @@ public class OrderTimeoutScheduler {
         this.slackNotifierService = slackNotifierService;
     }
 
-    @Scheduled(fixedRate = 3 * 60000)  // test : 3분마다 실행
+    @Scheduled(fixedRate = 5 * 60000)  // test : 5분마다 실행
     public void checkForTimeoutOrders() {
         log.info("Checking for timeout orders...");
 
