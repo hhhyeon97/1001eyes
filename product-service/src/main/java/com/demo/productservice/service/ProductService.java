@@ -3,6 +3,7 @@ package com.demo.productservice.service;
 import com.demo.productservice.dto.ProductRequestDto;
 import com.demo.productservice.model.Product;
 import com.demo.productservice.repository.ProductRepository;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Service;
 
@@ -14,8 +15,9 @@ public class ProductService {
 
     private final ProductRepository productRepository;
 
-    private final RedisTemplate<String, Integer> redisTemplate;
-    public ProductService(ProductRepository productRepository, RedisTemplate<String, Integer> redisTemplate) {
+    private final RedisTemplate<String, String> redisTemplate;
+
+    public ProductService(ProductRepository productRepository, RedisTemplate<String, String> redisTemplate) {
         this.productRepository = productRepository;
         this.redisTemplate = redisTemplate;
     }
@@ -37,31 +39,42 @@ public class ProductService {
         return productRepository.findById(id);
     }
 
-    // 재고 업데이트 -> Product 객체를 직접 저장
-    public void updateStock(Product product) {
-        productRepository.save(product);
+    /**
+     * Redis에서 임시 재고 수량을 조회
+     * 레디스에 없을 땐 db에서 조회
+     * @param productId 상품 ID
+     * @return 임시 재고 수량
+     */
+    public int getStockFromRedis(Long productId) {
+        // Redis에서 재고 조회
+        String stockStr = redisTemplate.opsForValue().get("stock:" + productId);
+        if (stockStr != null) {
+            try {
+                return Integer.parseInt(stockStr);
+            } catch (NumberFormatException e) {
+                // 로그를 남기거나 예외 처리 (선택 사항)
+                return 0;  // 기본값으로 반환 또는 예외 발생
+            }
+        }
+        // Redis에 재고 정보가 없는 경우 DB에서 조회
+        Product product = productRepository.findById(productId).orElse(null);
+        if (product != null) {
+            // 데이터베이스에서 조회한 재고를 Redis에 캐싱
+            redisTemplate.opsForValue().set("stock:" + productId, String.valueOf(product.getStock()));
+            return product.getStock();
+        }
+        return 0;  // 제품이 없는 경우 기본값 반환 또는 예외 처리
     }
 
-//    // Redis에서 재고 수량 조회
-//    public int getStockFromRedis(Long productId) {
-//        String key = "product:stock:" + productId;
-//        Integer stock = redisTemplate.opsForValue().get(key);  // Integer로 명시적 캐스팅
-//        if (stock != null) {
-//            return stock;
-//        }
-//        // Redis에 없으면 DB에서 조회
-//        Optional<Product> product = productRepository.findById(productId);
-//        if (product.isPresent()) {
-//            int dbStock = product.get().getStock();
-//            redisTemplate.opsForValue().set(key, dbStock);
-//            return dbStock;
-//        }
-//        return 0; // or throw exception
+
+//    // 재고 업데이트 -> Product 객체를 직접 저장
+//    public void updateStock(Product product) {
+//        productRepository.save(product);
 //    }
-
-    // Redis에 재고 수량 업데이트
-    public void updateStockInRedis(Long productId, int stock) {
-        String key = "product:stock:" + productId;
-        redisTemplate.opsForValue().set(key, stock);  // Integer로 저장
-    }
+//
+//    // Redis에 재고 수량 업데이트
+//    public void updateStockInRedis(Long productId, int stock) {
+//        String key = "product:stock:" + productId;
+//        redisTemplate.opsForValue().set(key, stock);  // Integer로 저장
+//    }
 }

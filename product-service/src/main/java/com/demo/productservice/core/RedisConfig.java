@@ -11,11 +11,11 @@ import org.springframework.data.redis.serializer.StringRedisSerializer;
 public class RedisConfig {
 
     @Bean
-    public RedisTemplate<String, Integer> redisTemplate(RedisConnectionFactory connectionFactory) {
-        RedisTemplate<String, Integer> template = new RedisTemplate<>();
+    public RedisTemplate<String, String> redisTemplate(RedisConnectionFactory connectionFactory) {
+        RedisTemplate<String, String> template = new RedisTemplate<>();
         template.setConnectionFactory(connectionFactory);
         template.setKeySerializer(new StringRedisSerializer());
-        template.setValueSerializer(new GenericToStringSerializer<>(Integer.class));  // Integer로 설정
+        template.setValueSerializer(new StringRedisSerializer());  // 모든 값이 문자열로 처리됨
         return template;
     }
 }
