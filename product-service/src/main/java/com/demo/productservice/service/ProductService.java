@@ -42,22 +42,22 @@ public class ProductService {
         productRepository.save(product);
     }
 
-    // Redis에서 재고 수량 조회
-    public int getStockFromRedis(Long productId) {
-        String key = "product:stock:" + productId;
-        Integer stock = redisTemplate.opsForValue().get(key);  // Integer로 명시적 캐스팅
-        if (stock != null) {
-            return stock;
-        }
-        // Redis에 없으면 DB에서 조회
-        Optional<Product> product = productRepository.findById(productId);
-        if (product.isPresent()) {
-            int dbStock = product.get().getStock();
-            redisTemplate.opsForValue().set(key, dbStock);
-            return dbStock;
-        }
-        return 0; // or throw exception
-    }
+//    // Redis에서 재고 수량 조회
+//    public int getStockFromRedis(Long productId) {
+//        String key = "product:stock:" + productId;
+//        Integer stock = redisTemplate.opsForValue().get(key);  // Integer로 명시적 캐스팅
+//        if (stock != null) {
+//            return stock;
+//        }
+//        // Redis에 없으면 DB에서 조회
+//        Optional<Product> product = productRepository.findById(productId);
+//        if (product.isPresent()) {
+//            int dbStock = product.get().getStock();
+//            redisTemplate.opsForValue().set(key, dbStock);
+//            return dbStock;
+//        }
+//        return 0; // or throw exception
+//    }
 
     // Redis에 재고 수량 업데이트
     public void updateStockInRedis(Long productId, int stock) {

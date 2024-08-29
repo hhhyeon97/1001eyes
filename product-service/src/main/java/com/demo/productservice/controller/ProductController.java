@@ -52,12 +52,12 @@ public class ProductController {
         }
     }
 
-    // 남은 수량 조회
-    @GetMapping("/{id}/stock")
-    public ResponseEntity<Integer> getRemainingStock(@PathVariable("id") Long id) {
-        int remainingStock = productService.getStockFromRedis(id);
-        return ResponseEntity.ok(remainingStock);
-    }
+//    // 남은 수량 조회
+//    @GetMapping("/{id}/stock")
+//    public ResponseEntity<Integer> getRemainingStock(@PathVariable("id") Long id) {
+//        int remainingStock = productService.getStockFromRedis(id);
+//        return ResponseEntity.ok(remainingStock);
+//    } -> db 수량 (찐 재고 수량) 말고 임시 재고 수량으로 보여주기
 
     // order-service와 내부 소통 -> 주문 생성시, 상품 반품 완료시 재고 업데이트 api
     @PutMapping("/{id}/stock")
