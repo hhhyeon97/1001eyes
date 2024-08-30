@@ -1,14 +1,17 @@
 package com.demo.productservice.service;
 
 import com.demo.productservice.dto.ProductRequestDto;
+import com.demo.productservice.dto.ProductResponseDto;
 import com.demo.productservice.model.Product;
 import com.demo.productservice.repository.ProductRepository;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
 import java.util.Optional;
 
+@Slf4j
 @Service
 public class ProductService {
 
@@ -33,10 +36,24 @@ public class ProductService {
         return productRepository.findAll();
     }
 
-    // 상품 상세 조회
-    public Optional<Product> findItemById(Long id) {
-        return productRepository.findById(id);
+//    // 상품 상세 조회
+//    public Optional<Product> findItemById(Long id) {
+//        return productRepository.findById(id);
+//    }
+
+    // 상품 상세 조회 -> 재고만 레디스 임시 재고로 보여줄 것 !! 
+    public Optional<ProductResponseDto> findItemDetailById(Long id) {
+        Optional<Product> productOpt = productRepository.findById(id);
+        if (productOpt.isPresent()) {
+            Product product = productOpt.get();
+            int remainingStock = getStockFromRedis(product.getId());
+            ProductResponseDto productDto = new ProductResponseDto(product, remainingStock);
+            return Optional.of(productDto);
+        } else {
+            return Optional.empty();
+        }
     }
+
 
     /**
      * Redis에서 임시 재고 수량을 조회
@@ -66,25 +83,19 @@ public class ProductService {
     }
 
 
-//    // 재고 업데이트 -> Product 객체를 직접 저장
-//    public void updateStock(Product product) {
-//        productRepository.save(product);
-//    }
-//
-//    // Redis에 재고 수량 업데이트
-//    public void updateStockInRedis(Long productId, int stock) {
-//        String key = "product:stock:" + productId;
-//        redisTemplate.opsForValue().set(key, stock);  // Integer로 저장
-//    }
-
     public void updateProductStock(Long productId, int newStock) {
+        log.info("오더서비스에서 재고 업데이트 소통하러 옴 !!!!");
         // 1. 상품 정보를 DB에서 조회
         Product product = productRepository.findById(productId)
                 .orElseThrow(() -> new RuntimeException("상품을 찾을 수 없습니다: " + productId));
 
+        log.info("오더서비스에서 재고 업데이트 소통하러 옴 2222222222222222222");
         // 2. 상품의 재고 업데이트
         product.setStock(newStock);
         productRepository.save(product);
+
+        log.info("오더서비스에서 재고 업데이트 소통하러 옴 3333333333333333333");
+
         // todo : 레디스엔 이때 업데이트 해주면 안 되는 ??..
         /*
         ex)
@@ -96,5 +107,18 @@ public class ProductService {
         -> 더 뒤에 온 사람들한테 갑자기 재고가 생겨나 보이는 것처럼 될 수 있는 ?!
         -> 일단 내가 생각한 게 맞는지 정답인지는 모르겠지만 일단 여기선 레디스 업데이트 해주지 말자 !
         * */
+    }
+
+
+    // 상품의 stock 수량을 조회하는 메서드
+    public int getProductStock(Long productId) {
+        // DB에서 Product 엔티티를 찾고 stock 수량 반환
+        Optional<Product> product = productRepository.findById(productId);
+        if (product.isPresent()) {
+            return product.get().getStock();  // Product 엔티티의 getStock() 메서드 호출
+        } else {
+            // 상품이 없을 경우 예외 처리
+            return 0;  // 기본값 또는 예외를 발생시키도록 변경할 수 있음
+        }
     }
 }

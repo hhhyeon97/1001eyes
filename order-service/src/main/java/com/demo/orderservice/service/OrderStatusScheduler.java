@@ -77,7 +77,11 @@
 //                            throw new RuntimeException("상품 정보를 가져올 수 없습니다: " + item.getProductId());
 //                        }
 //
-//                        // 재고 복구
+//                        // 재고 복구 todo : db만 복구 말고 레디스도 바꿔줘야 할 듯 ?? ....!!! 이거 선착순구매랑 연관 없게 7일뒤 복구해주거나...
+                            // 만약 선착순도 진행하고 있는 중이여서 사람 몰리고 있는 상태에서 주문 취소에 대한 재고를
+//                          레디스에서도 db 복구해준것처럼 재고 복구해주면 또 불일치 .....???
+
+
 //                        int updatedStock = productDto.getStock() + item.getQuantity();
 //                        productServiceClient.updateProductStock(productDto.getId(), updatedStock);
 //                    }
