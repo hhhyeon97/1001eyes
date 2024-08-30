@@ -150,11 +150,11 @@ public class UserService {
             throw new IllegalArgumentException("중복된 이메일이 존재합니다.");
         }
 
-        VerificationToken token = verificationTokenRepository.findByEmail(encryptedEmail)
-                .orElseThrow(() -> new IllegalArgumentException("이메일 인증을 먼저 진행해 주세요."));
-        if (!token.isVerified()) {
-            throw new IllegalArgumentException("이메일 인증이 완료되지 않았습니다.");
-        }
+//        VerificationToken token = verificationTokenRepository.findByEmail(encryptedEmail)
+//                .orElseThrow(() -> new IllegalArgumentException("이메일 인증을 먼저 진행해 주세요."));
+//        if (!token.isVerified()) {
+//            throw new IllegalArgumentException("이메일 인증이 완료되지 않았습니다.");
+//        }
 
         String password = passwordEncoder.encode(requestDto.getPassword());
         String phone = requestDto.getPhone();
