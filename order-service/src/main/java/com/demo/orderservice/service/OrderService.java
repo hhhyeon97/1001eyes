@@ -199,7 +199,7 @@ public class OrderService {
     }
 
     // 주문 진입 ( 실제 db 반영 x -> 레디스에 저장 )
-    @Transactional
+    @Transactional(readOnly = false)
     public Long prepareOrder(String userId, List<PrepareOrderRequestDto> prepareOrderRequestDtoList) {
         // 1. 주문에 대한 고유한 키 생성 (Long)
         Long orderKey = redisTemplate.opsForValue().increment(ORDER_KEY_SEQUENCE);
@@ -385,6 +385,8 @@ public class OrderService {
 
                 // 상품 서비스에 재고 차감 요청
                 productServiceClient.checkAndDeductStock(productId, quantityOrdered);
+                // todo : 지금은 받아온 결과 뭐 쓰는건 없는데 추후에 에러메세지를 반환 받을 때
+                // 추가적인 처리하면 좋겠다 !
             }
 
             // 4. 주문 성공 후 Redis에서 해당 주문 데이터 삭제
