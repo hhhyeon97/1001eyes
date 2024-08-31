@@ -20,4 +20,7 @@ public interface ProductServiceClient {
     @PutMapping("/api/products/{id}/stock")
     ResponseEntity<String> updateProductStock(@PathVariable("id") Long id, @RequestParam("stock") int stock);
 
+    // 새로운 재고 확인 및 차감 API
+    @PostMapping("/api/products/{id}/deduct")
+    ResponseEntity<String> checkAndDeductStock(@PathVariable("id") Long id, @RequestParam("quantity") int quantity);
 }

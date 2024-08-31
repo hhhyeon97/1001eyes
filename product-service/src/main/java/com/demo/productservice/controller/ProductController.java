@@ -1,6 +1,7 @@
 package com.demo.productservice.controller;
 
 
+import com.demo.productservice.dto.ProductListResponseDto;
 import com.demo.productservice.dto.ProductRequestDto;
 import com.demo.productservice.dto.ProductResponseDto;
 import com.demo.productservice.service.ProductService;
@@ -30,28 +31,13 @@ public class ProductController {
 
     // 상품 리스트 조회
     @GetMapping
-    public ResponseEntity<List<ProductResponseDto>> productList() {
-        List<ProductResponseDto> products = productService.getAllProducts()
-                .stream()
-                .map(ProductResponseDto::new)
-                .collect(Collectors.toList());
-
+    public ResponseEntity<List<ProductListResponseDto>> productList() {
+        List<ProductListResponseDto> products = productService.getAllProducts();
         return ResponseEntity.ok(products);
     }
 
-   /* // 상품 상세 조회
-    @GetMapping("/{id}")
-    public ResponseEntity<ProductResponseDto> productDetail(@PathVariable("id") Long id) {
-        Optional<Product> result = productService.findItemById(id);
-        if (result.isPresent()) {
-            ProductResponseDto productDto = new ProductResponseDto(result.get());
-            return ResponseEntity.ok(productDto);
-        } else {
-            return ResponseEntity.status(404).body(null);
-        }
-    }*/
 
-    // 상품 상세 조회 -> 수정한 사항 : 상세페이지에서 보여줄
+    // 상품 상세 조회 -> 수정한 사항 : 상세페이지에서 보여줄 재고는 레디스 캐싱한 데이터
     @GetMapping("/{id}")
     public ResponseEntity<ProductResponseDto> productDetail(@PathVariable("id") Long id) {
         Optional<ProductResponseDto> result = productService.findItemDetailById(id);
@@ -67,11 +53,11 @@ public class ProductController {
      * @param id 상품 ID
      * @return 임시 재고 수량
      */
-    @GetMapping("/{id}/stock")
-    public ResponseEntity<Integer> getRemainingStock(@PathVariable("id") Long id) {
-        int remainingStock = productService.getStockFromRedis(id);
-        return ResponseEntity.ok(remainingStock);
-    }
+//    @GetMapping("/{id}/stock")
+//    public ResponseEntity<Integer> getRemainingStock(@PathVariable("id") Long id) {
+//        int remainingStock = productService.getStockFromRedis(id);
+//        return ResponseEntity.ok(remainingStock);
+//    }
 
     /**
      * order-service와 내부 소통하는 api
@@ -99,6 +85,21 @@ public class ProductController {
         int stock = productService.getProductStock(id);
         // 반환값 설정 (stock 수량)
         return ResponseEntity.ok(stock);
+    }
+
+
+    /** 240831
+     * 주문에서 호출하는 재고 확인 및 차감 API
+     * 재고가 충분하면 차감하고, 부족하면 예외를 발생시킴
+     */
+    @PostMapping("/{id}/deduct")
+    public ResponseEntity<String> checkAndDeductStock(@PathVariable("id") Long id, @RequestParam("quantity") int quantity) {
+        try {
+            productService.checkAndDeductStock(id, quantity);
+            return ResponseEntity.ok("재고 차감이 완료되었습니다.");
+        } catch (RuntimeException e) {
+            return ResponseEntity.badRequest().body("재고 차감 중 오류 발생: " + e.getMessage());
+        }
     }
 
 

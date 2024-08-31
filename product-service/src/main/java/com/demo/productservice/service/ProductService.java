@@ -1,5 +1,6 @@
 package com.demo.productservice.service;
 
+import com.demo.productservice.dto.ProductListResponseDto;
 import com.demo.productservice.dto.ProductRequestDto;
 import com.demo.productservice.dto.ProductResponseDto;
 import com.demo.productservice.model.Product;
@@ -7,9 +8,11 @@ import com.demo.productservice.repository.ProductRepository;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 @Slf4j
 @Service
@@ -31,9 +34,22 @@ public class ProductService {
         productRepository.save(product);
     }
 
-    // 상품 리스트 조회
-    public List<Product> getAllProducts() {
-        return productRepository.findAll();
+//    // 상품 리스트 조회
+//    public List<Product> getAllProducts() {
+//        return productRepository.findAll();
+//    }
+
+    // DTO 변환 포함 상품 리스트 조회
+    public List<ProductListResponseDto> getAllProducts() {
+        return productRepository.findAll()
+                .stream()
+                .map(product -> new ProductListResponseDto(
+                        product.getId(),
+                        product.getTitle(),
+                        product.getCategory(),
+                        product.getPrice(),
+                        product.getImageUrl()))
+                .collect(Collectors.toList());
     }
 
 //    // 상품 상세 조회
@@ -43,7 +59,7 @@ public class ProductService {
 
     // 상품 상세 조회 -> 재고만 레디스 임시 재고로 보여줄 것 !! 
     public Optional<ProductResponseDto> findItemDetailById(Long id) {
-        Optional<Product> productOpt = productRepository.findById(id);
+        Optional<Product> productOpt = productRepository.findByIdWithLock(id);
         if (productOpt.isPresent()) {
             Product product = productOpt.get();
             int remainingStock = getStockFromRedis(product.getId());
@@ -73,7 +89,7 @@ public class ProductService {
             }
         }
         // Redis에 재고 정보가 없는 경우 DB에서 조회
-        Product product = productRepository.findById(productId).orElse(null);
+        Product product = productRepository.findByIdWithLock(productId).orElse(null);
         if (product != null) {
             // 데이터베이스에서 조회한 재고를 Redis에 캐싱
             redisTemplate.opsForValue().set("stock:" + productId, String.valueOf(product.getStock()));
@@ -86,7 +102,7 @@ public class ProductService {
     public void updateProductStock(Long productId, int newStock) {
         log.info("오더서비스에서 재고 업데이트 소통하러 옴 !!!!");
         // 1. 상품 정보를 DB에서 조회
-        Product product = productRepository.findById(productId)
+        Product product = productRepository.findByIdWithLock(productId)
                 .orElseThrow(() -> new RuntimeException("상품을 찾을 수 없습니다: " + productId));
 
         log.info("오더서비스에서 재고 업데이트 소통하러 옴 2222222222222222222");
@@ -111,9 +127,10 @@ public class ProductService {
 
 
     // 상품의 stock 수량을 조회하는 메서드
+    @Transactional
     public int getProductStock(Long productId) {
         // DB에서 Product 엔티티를 찾고 stock 수량 반환
-        Optional<Product> product = productRepository.findById(productId);
+        Optional<Product> product = productRepository.findByIdWithLock(productId);
         if (product.isPresent()) {
             return product.get().getStock();  // Product 엔티티의 getStock() 메서드 호출
         } else {
@@ -121,4 +138,22 @@ public class ProductService {
             return 0;  // 기본값 또는 예외를 발생시키도록 변경할 수 있음
         }
     }
+
+    @Transactional
+    public void checkAndDeductStock(Long productId, int quantityToOrder) {
+        // 비관적 락을 걸고 상품을 조회
+        Product product = productRepository.findByIdWithLock(productId)
+                .orElseThrow(() -> new IllegalArgumentException("상품을 찾을 수 없습니다: " + productId));
+
+        int currentStock = product.getStock();
+
+        if (currentStock < quantityToOrder) {
+            throw new RuntimeException("상품 재고가 부족합니다: " + productId);
+        }
+        // 재고 차감
+        product.setStock(currentStock - quantityToOrder);
+        productRepository.save(product);
+    }
+
+
 }
