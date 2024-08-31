@@ -22,9 +22,7 @@ public class ProductResponseDto {
         this.description = product.getDescription();
         this.category = product.getCategory();
         this.price = product.getPrice();
-        this.stock = product.getStock(); // todo : 상품 목록 조회하면 db 재고로 나오는데 어차피 리스트에선 재고 보여주지 않을 거니까 제거하고 싶은데 !
-                                        // -> 상품 목록 api용 responseDto를 따로 만든다 ?
-                                        // 추후 메인 페이지에서 상품 리스트 보여줄 땐 상품명,상품사진,가격 정도만 보여주기
+        this.stock = product.getStock();
         this.imageUrl = product.getImageUrl();
     }
 

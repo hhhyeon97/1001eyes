@@ -1,5 +1,6 @@
 package com.demo.productservice.service;
 
+import com.demo.productservice.dto.ProductListResponseDto;
 import com.demo.productservice.dto.ProductRequestDto;
 import com.demo.productservice.dto.ProductResponseDto;
 import com.demo.productservice.model.Product;
@@ -10,6 +11,7 @@ import org.springframework.stereotype.Service;
 
 import java.util.List;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 @Slf4j
 @Service
@@ -31,9 +33,22 @@ public class ProductService {
         productRepository.save(product);
     }
 
-    // 상품 리스트 조회
-    public List<Product> getAllProducts() {
-        return productRepository.findAll();
+//    // 상품 리스트 조회
+//    public List<Product> getAllProducts() {
+//        return productRepository.findAll();
+//    }
+
+    // DTO 변환 포함 상품 리스트 조회
+    public List<ProductListResponseDto> getAllProducts() {
+        return productRepository.findAll()
+                .stream()
+                .map(product -> new ProductListResponseDto(
+                        product.getId(),
+                        product.getTitle(),
+                        product.getCategory(),
+                        product.getPrice(),
+                        product.getImageUrl()))
+                .collect(Collectors.toList());
     }
 
 //    // 상품 상세 조회

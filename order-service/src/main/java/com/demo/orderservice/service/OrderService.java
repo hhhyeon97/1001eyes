@@ -30,11 +30,9 @@ public class OrderService {
 
     private final OrderRepository orderRepository;
     private final ProductServiceClient productServiceClient;
-//    private final StringRedisTemplate redisTemplate;
     private final RedisTemplate<String, Object> redisTemplate;
     private ObjectMapper objectMapper;
     private static final String ORDER_KEY_SEQUENCE = "order:key:sequence";
-    private static final String STOCK_RECOVERY_KEY_PREFIX = "stock_recovery:";
 
 
     public OrderService(OrderRepository orderRepository, ProductServiceClient productServiceClient, RedisTemplate<String, Object> redisTemplate
@@ -163,18 +161,19 @@ public class OrderService {
         }
     }*/
 
-    // 주문 취소 리팩토링 1 : 기존 - 주문 취소시 바로 재고 복구 -> 변경 - 스케줄러로 며칠 있다 복구되게 설정 (캔슬날짜 컬럼 추가)
+    // 주문 취소 (결제 완료 후 - 배송준비전까지 가능)
     @Transactional
     public void cancelOrder(Long orderId) {
         Order order = orderRepository.findById(orderId)
                 .orElseThrow(() -> new RuntimeException("해당하는 주문 정보가 없습니다."));
 
-        // 상태가 '배송중' 이상인 경우 취소 불가
-        if (order.getStatus() != OrderStatus.PENDING) {
-            throw new RuntimeException("이미 배송 중이거나 배달 중이므로 주문을 취소할 수 없습니다.");
+        // 상태가 '배송 준비중' 이상인 경우 취소 불가
+        if (order.getStatus() != OrderStatus.COMPLETED) {
+            throw new RuntimeException("이미 배송 준비중이거나 배달 중이므로 주문을 취소할 수 없습니다.");
         }
         // 주문 상태를 '취소됨'으로 변경
         order.setStatus(OrderStatus.CANCELED);
+        order.setCancelDate(LocalDateTime.now());
         orderRepository.save(order);
     }
 
@@ -223,10 +222,6 @@ public class OrderService {
             // Redis에 재고 정보가 없으면 ProductService를 통해 재고 조회
             if (currentStock == null) {
                 // ProductServiceClient를 사용하여 실제 DB에서 재고 조회
-               /* ProductResponseDto productResponse = productServiceClient.getProductById(productId).getBody();
-                if (productResponse == null) {
-                    throw new IllegalArgumentException("상품을 찾을 수 없습니다: " + productId);
-                }*/
                 Integer dbStock = productServiceClient.getProductByInternalId(productId).getBody();
 
                 currentStock = dbStock; // 상품의 실제 재고
@@ -325,31 +320,19 @@ public class OrderService {
                 Long productId = item.getProductId();
                 int quantityOrdered = item.getQuantity();
 
-               /* // 상품 서비스에서 상품 정보 조회 -> 결제 완료 메서드에서 상품 정보를 또 조회할 필요가 없음 !!! 주석주석
-                ResponseEntity<ProductResponseDto> responseEntity = productServiceClient.getProductById(productId);
-                if (responseEntity == null || !responseEntity.getStatusCode().is2xxSuccessful()) {
-                    throw new RuntimeException("상품 정보를 조회할 수 없습니다: " + productId);
-                }
-
-                ProductResponseDto product = responseEntity.getBody();
-                if (product == null) {
-                    throw new RuntimeException("해당 상품을 찾을 수 없습니다: " + productId);
-                }*/
-
+                // 상품 서비스에서 실제 db 재고 가져오기 !
                 Integer currentStock = productServiceClient.getProductByInternalId(productId).getBody();
 
-                // todo : 여기서부터
                 // 재고 확인 및 차감
-                int updatedStock = currentStock- quantityOrdered;
+                int updatedStock = currentStock - quantityOrdered;
                 if (updatedStock < 0) {
                     throw new RuntimeException("상품 재고 부족: " + productId);
                 }
-
                 // todo : 재고 차감 요청 -> 동시성 문제 -> 재고를 확인하는 시점이랑 차감하는 시점 시간 차이날 가능성
                 // -> 재고 확인 하고 차감하는 걸 오더에서 x - > 상품 서비스에서 처리
 
+                // 상품 서비스에 차감한 재고 정보 넘겨서 db 상품 재고 업데이트 !
                 productServiceClient.updateProductStock(productId, updatedStock);
-                // todo : 여기까지 수정 필요
             }
             // 4. 주문 성공 후 Redis에서 해당 주문 데이터 삭제
             redisTemplate.opsForHash().delete("orders", orderKey.toString());

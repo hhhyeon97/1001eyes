@@ -1,6 +1,7 @@
 package com.demo.productservice.controller;
 
 
+import com.demo.productservice.dto.ProductListResponseDto;
 import com.demo.productservice.dto.ProductRequestDto;
 import com.demo.productservice.dto.ProductResponseDto;
 import com.demo.productservice.service.ProductService;
@@ -28,14 +29,20 @@ public class ProductController {
         return ResponseEntity.ok("상품 등록 완료!");
     }
 
+//    // 상품 리스트 조회
+//    @GetMapping
+//    public ResponseEntity<List<ProductListResponseDto>> productList() {
+//        List<ProductListResponseDto> products = productService.getAllProducts()
+//                .stream()
+//                .map(ProductListResponseDto::new)
+//                .collect(Collectors.toList());
+//        return ResponseEntity.ok(products);
+//    }
+
     // 상품 리스트 조회
     @GetMapping
-    public ResponseEntity<List<ProductResponseDto>> productList() {
-        List<ProductResponseDto> products = productService.getAllProducts()
-                .stream()
-                .map(ProductResponseDto::new)
-                .collect(Collectors.toList());
-
+    public ResponseEntity<List<ProductListResponseDto>> productList() {
+        List<ProductListResponseDto> products = productService.getAllProducts();
         return ResponseEntity.ok(products);
     }
 
