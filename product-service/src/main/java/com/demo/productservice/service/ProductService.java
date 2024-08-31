@@ -8,6 +8,7 @@ import com.demo.productservice.repository.ProductRepository;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 import java.util.Optional;
@@ -136,4 +137,23 @@ public class ProductService {
             return 0;  // 기본값 또는 예외를 발생시키도록 변경할 수 있음
         }
     }
+
+
+    @Transactional
+    public void checkAndDeductStock(Long productId, int quantityToOrder) {
+        Product product = productRepository.findById(productId)
+                .orElseThrow(() -> new IllegalArgumentException("상품을 찾을 수 없습니다: " + productId));
+
+        int currentStock = product.getStock();
+
+        if (currentStock < quantityToOrder) {
+            throw new RuntimeException("상품 재고가 부족합니다: " + productId);
+        }
+
+        product.setStock(currentStock - quantityToOrder);
+        productRepository.save(product);
+    }
+
+
+
 }
