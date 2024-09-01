@@ -156,7 +156,7 @@ public class ProductService {
         productRepository.save(product);
     }*/
 
-    @Transactional
+    /*@Transactional
     public void checkAndDeductStock(Long productId, int quantityToOrder) {
         try {
             // 기존 로직
@@ -179,6 +179,41 @@ public class ProductService {
             // 낙관적 락 예외가 발생한 경우 예외 처리
             // 예외 메시지를 로깅하거나 사용자에게 알림
             throw new RuntimeException("낙관적 락 충돌이 발생했습니다. 다시 시도해 주세요.", e);
+        }
+    }*/
+
+    @Transactional
+    public void checkAndDeductStock(Long productId, int quantityToOrder) {
+        int retryCount = 0;
+        boolean success = false;
+
+        while (retryCount < 3 && !success) {
+            try {
+                Product product = productRepository.findById(productId)
+                        .orElseThrow(() -> new IllegalArgumentException("상품을 찾을 수 없습니다: " + productId));
+
+                int currentStock = product.getStock();
+
+                if (currentStock < quantityToOrder) {
+                    throw new RuntimeException("상품 재고가 부족합니다: " + productId);
+                }
+
+                // 재고 차감
+                product.setStock(currentStock - quantityToOrder);
+
+                // 변경 사항 저장 (낙관적 락을 통해 변경 시점에서 버전 필드 확인)
+                productRepository.save(product);
+
+                success = true;
+
+            } catch (OptimisticLockException e) {
+                retryCount++;
+                if (retryCount >= 3) {
+                    throw new RuntimeException("낙관적 락 충돌이 발생했습니다. 다시 시도해 주세요.", e);
+                }
+                // 재시도 간의 지연을 추가할 수 있습니다 (옵션)
+                // Thread.sleep(100); 등의 방법으로 지연을 줄 수 있음
+            }
         }
     }
 

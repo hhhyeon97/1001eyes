@@ -7,12 +7,15 @@ import com.demo.orderservice.model.OrderItem;
 import com.demo.orderservice.model.OrderStatus;
 import com.demo.orderservice.repository.OrderRepository;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import feign.FeignException;
+import jakarta.persistence.OptimisticLockException;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
@@ -353,7 +356,7 @@ public class OrderService {
      * @param userId
      * @return
      */
-    @Transactional
+   /* @Transactional
     public ResponseEntity<?> completePayment(String userId) {
         // 1. 주문 키와 주문 객체 조회
         String userOrderKey = "user_orders:" + userId;
@@ -398,6 +401,69 @@ public class OrderService {
             // 예외 발생 시 롤백 자동 수행 (트랜잭션 관리에 의해)
             log.error("결제 처리 중 오류 발생", e);
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("결제 처리 중 오류가 발생했습니다.");
+        }
+    }*/
+
+    @Transactional
+    public ResponseEntity<?> completePayment(String userId) {
+        String userOrderKey = "user_orders:" + userId;
+        String orderKeyStr = (String) redisTemplate.opsForValue().get(userOrderKey);
+
+        if (orderKeyStr == null) {
+            return ResponseEntity.badRequest().body("해당 사용자의 주문이 없습니다.");
+        }
+
+        Long orderKey = Long.parseLong(orderKeyStr);
+        Object orderObject = redisTemplate.opsForHash().get("orders", orderKey.toString());
+        if (orderObject == null) {
+            return ResponseEntity.badRequest().body("주문을 찾을 수 없습니다.");
+        }
+
+        PrepareOrderDto orderDto = objectMapper.convertValue(orderObject, PrepareOrderDto.class);
+
+        try {
+            // 2. 주문 객체를 실제 주문 테이블에 저장
+            Order order = orderDto.toEntity();
+            order.setStatus(OrderStatus.COMPLETED);
+            orderRepository.save(order);
+
+            // 3. 저장된 주문 정보 기반으로 재고 차감 수행
+            Set<OrderItem> orderItems = order.getItems();
+            for (OrderItem item : orderItems) {
+                try {
+                    deductStockWithRetry(item, 3); // 재시도 로직 포함한 메서드
+                } catch (Exception e) {
+                    log.error("재고 차감 중 오류 발생. 상품 ID: {}, 수량: {}", item.getProductId(), item.getQuantity(), e);
+                    return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("재고 차감 중 오류가 발생했습니다.");
+                }
+            }
+
+            // 4. 주문 성공 후 Redis에서 해당 주문 데이터 삭제
+            redisTemplate.opsForHash().delete("orders", orderKey.toString());
+            redisTemplate.delete(userOrderKey);
+
+            return ResponseEntity.ok("결제가 완료되었습니다.");
+        } catch (Exception e) {
+            log.error("결제 처리 중 오류 발생", e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("결제 처리 중 오류가 발생했습니다.");
+        }
+    }
+
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
+    public void deductStockWithRetry(OrderItem item, int maxRetries) throws Exception {
+        int retryCount = 0;
+        while (retryCount < maxRetries) {
+            try {
+                productServiceClient.checkAndDeductStock(item.getProductId(), item.getQuantity());
+                return; // 성공 시 메서드 종료
+            } catch (OptimisticLockException | FeignException e) {
+                retryCount++;
+                if (retryCount >= maxRetries) {
+                    throw new RuntimeException("최대 재시도 횟수를 초과하였습니다. 상품 ID: " + item.getProductId(), e);
+                }
+                // 지수 백오프 등 지연 추가 가능
+                Thread.sleep(100 * retryCount);
+            }
         }
     }
 
