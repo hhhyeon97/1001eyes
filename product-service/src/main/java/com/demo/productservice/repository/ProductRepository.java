@@ -12,9 +12,9 @@ import java.util.Optional;
 @Repository
 public interface ProductRepository extends JpaRepository<Product, Long> {
 
-//    // 비관적 락을 사용하여 재고를 조회
-//    @Lock(LockModeType.PESSIMISTIC_WRITE)
-//    @Query("SELECT p FROM Product p WHERE p.id = :id")
-//    Optional<Product> findById(Long id);
+    // 비관적 락을 사용하여 재고를 조회
+    @Lock(LockModeType.PESSIMISTIC_WRITE)
+    @Query("SELECT p FROM Product p WHERE p.id = :id")
+    Optional<Product> findByIdWithLock(Long id);
 
 }
