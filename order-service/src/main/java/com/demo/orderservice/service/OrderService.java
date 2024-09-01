@@ -7,12 +7,15 @@ import com.demo.orderservice.model.OrderItem;
 import com.demo.orderservice.model.OrderStatus;
 import com.demo.orderservice.repository.OrderRepository;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import feign.FeignException;
+import jakarta.persistence.OptimisticLockException;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;

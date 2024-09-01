@@ -75,7 +75,7 @@ public class OrderTimeoutScheduler {
         log.info("Order key {} has been deleted from Redis", orderKey);
 
         // 4. Slack 알림 발송
-        slackNotifierService.sendNotification("Order with key " + orderKey + " has timed out and been removed.");
+//        slackNotifierService.sendNotification("Order with key " + orderKey + " has timed out and been removed.");
     }
 
     private void restoreStock(PrepareOrderDto orderDto) {

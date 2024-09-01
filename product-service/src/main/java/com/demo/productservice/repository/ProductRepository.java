@@ -17,9 +17,4 @@ public interface ProductRepository extends JpaRepository<Product, Long> {
     @Query("SELECT p FROM Product p WHERE p.id = :id")
     Optional<Product> findByIdWithLock(Long id);
 
-//    // 기존 findById 메서드를 변경한 이름으로 정의
-//    @Lock(LockModeType.PESSIMISTIC_WRITE)
-//    @Query("SELECT p FROM Product p WHERE p.id = :id")
-//    Optional<Product> findProductByIdWithLock(@Param("id") Long id);
-
 }
