@@ -35,6 +35,10 @@ public class Product {
     @CreationTimestamp
     private LocalDateTime created_at;
 
+
+    @Version
+    private Long version;
+
     public Product(String title, String description, String category, Integer price, Integer stock, String imageUrl) {
         this.title = title;
         this.description = description;
