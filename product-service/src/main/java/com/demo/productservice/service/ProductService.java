@@ -34,11 +34,6 @@ public class ProductService {
         productRepository.save(product);
     }
 
-//    // 상품 리스트 조회
-//    public List<Product> getAllProducts() {
-//        return productRepository.findAll();
-//    }
-
     // DTO 변환 포함 상품 리스트 조회
     public List<ProductListResponseDto> getAllProducts() {
         return productRepository.findAll()
@@ -52,10 +47,6 @@ public class ProductService {
                 .collect(Collectors.toList());
     }
 
-//    // 상품 상세 조회
-//    public Optional<Product> findItemById(Long id) {
-//        return productRepository.findById(id);
-//    }
 
     // 상품 상세 조회 -> 재고만 레디스 임시 재고로 보여줄 것 !! 
     public Optional<ProductResponseDto> findItemDetailById(Long id) {
@@ -100,17 +91,13 @@ public class ProductService {
 
 
     public void updateProductStock(Long productId, int newStock) {
-        log.info("오더서비스에서 재고 업데이트 소통하러 옴 !!!!");
         // 1. 상품 정보를 DB에서 조회
         Product product = productRepository.findByIdWithLock(productId)
                 .orElseThrow(() -> new RuntimeException("상품을 찾을 수 없습니다: " + productId));
 
-        log.info("오더서비스에서 재고 업데이트 소통하러 옴 2222222222222222222");
         // 2. 상품의 재고 업데이트
         product.setStock(newStock);
         productRepository.save(product);
-
-        log.info("오더서비스에서 재고 업데이트 소통하러 옴 3333333333333333333");
 
         // todo : 레디스엔 이때 업데이트 해주면 안 되는 ??..
         /*

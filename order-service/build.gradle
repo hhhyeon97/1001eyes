@@ -43,6 +43,8 @@ dependencies {
     implementation 'org.springframework.boot:spring-boot-starter-data-redis'
 
     implementation 'org.springframework.boot:spring-boot-starter-webflux'
+
+    implementation 'org.redisson:redisson:3.21.0'
 }
 
 tasks.named('test') {
