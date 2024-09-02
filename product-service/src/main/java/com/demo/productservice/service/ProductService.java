@@ -6,12 +6,15 @@ import com.demo.productservice.dto.ProductResponseDto;
 import com.demo.productservice.model.Product;
 import com.demo.productservice.repository.ProductRepository;
 import lombok.extern.slf4j.Slf4j;
+import org.redisson.api.RLock;
+import org.redisson.api.RedissonClient;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 import java.util.Optional;
+import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
 @Slf4j
@@ -21,10 +24,12 @@ public class ProductService {
     private final ProductRepository productRepository;
 
     private final RedisTemplate<String, String> redisTemplate;
-
-    public ProductService(ProductRepository productRepository, RedisTemplate<String, String> redisTemplate) {
+    private final RedissonClient redissonClient;
+    public ProductService(ProductRepository productRepository, RedisTemplate<String, String> redisTemplate,
+                          RedissonClient redissonClient) {
         this.productRepository = productRepository;
         this.redisTemplate = redisTemplate;
+        this.redissonClient = redissonClient;
     }
 
     // 상품 등록
@@ -126,7 +131,7 @@ public class ProductService {
         }
     }
 
-    @Transactional
+    /*@Transactional
     public void checkAndDeductStock(Long productId, int quantityToOrder) {
         // 비관적 락을 걸고 상품을 조회
         Product product = productRepository.findByIdWithLock(productId)
@@ -140,6 +145,47 @@ public class ProductService {
         // 재고 차감
         product.setStock(currentStock - quantityToOrder);
         productRepository.save(product);
+    }*/
+
+    @Transactional
+    public void checkAndDeductStock(Long productId, int quantityToOrder) {
+        RLock lock = redissonClient.getLock("stock_lock:" + productId);  // 락 생성
+
+        try {
+            // 락을 획득하려고 시도 (5초 동안 시도하고, 10초 동안 락이 유지됨)
+            if (lock.tryLock(5, 10, TimeUnit.SECONDS)) {
+                try {
+                    // 비관적 락을 걸고 상품을 조회
+                    Product product = productRepository.findByIdWithLock(productId)
+                            .orElseThrow(() -> new IllegalArgumentException("상품을 찾을 수 없습니다: " + productId));
+
+                    int currentStock = product.getStock();
+
+                    if (currentStock < quantityToOrder) {
+                        throw new RuntimeException("상품 재고가 부족합니다: " + productId);
+                    }
+
+                    // 재고 차감
+                    product.setStock(currentStock - quantityToOrder);
+                    productRepository.save(product);
+
+                    // Redis 캐시된 재고도 업데이트
+                    redisTemplate.opsForValue().set("stock:" + productId, String.valueOf(currentStock - quantityToOrder));
+
+                } finally {
+                    lock.unlock();  // 락 해제
+                }
+            } else {
+                throw new RuntimeException("재고 차감을 위한 락을 획득하지 못했습니다.");
+            }
+        } catch (InterruptedException e) {
+            log.error("락 획득 중 인터럽트 발생", e);
+            Thread.currentThread().interrupt();
+            throw new RuntimeException("재고 차감 중 오류가 발생했습니다.", e);
+        } catch (Exception e) {
+            log.error("재고 차감 중 예외 발생", e);
+            throw new RuntimeException("재고 차감 중 오류가 발생했습니다.", e);
+        }
     }
 
 
