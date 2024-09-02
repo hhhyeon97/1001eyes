@@ -154,6 +154,7 @@ public class OrderService {
 
             // Redis에 재고 정보가 없으면 ProductService를 통해 재고 조회
             if (currentStock == null) {
+                log.info("db 조회");
                 // ProductServiceClient를 사용하여 실제 DB에서 재고 조회
                 Integer dbStock = productServiceClient.getProductByInternalId(productId).getBody();
 
@@ -172,7 +173,6 @@ public class OrderService {
         // 3. 주문 객체 생성 (레디스에 담을 임시 dto 객체)
         PrepareOrderDto prepareOrderDto = new PrepareOrderDto();
         prepareOrderDto.setUserId(userId);
-        prepareOrderDto.setOrderId(orderKey);
         prepareOrderDto.setOrderItems(prepareOrderRequestDtoList);
         prepareOrderDto.setCreatedAt(LocalDateTime.now());
         prepareOrderDto.setStatus(OrderStatus.PENDING);
@@ -229,54 +229,135 @@ public class OrderService {
      * @param userId
      * @return
      */
-    @Transactional
+//    @Transactional
+//    public ResponseEntity<?> completePayment(String userId) {
+//        // 1. 주문 키와 주문 객체 조회
+//        String userOrderKey = "user_orders:" + userId;
+//        String orderKeyStr = (String) redisTemplate.opsForValue().get(userOrderKey);
+//
+//        if (orderKeyStr == null) {
+//            return ResponseEntity.badRequest().body("해당 사용자의 주문이 없습니다.");
+//        }
+//
+//        Long orderKey = Long.parseLong(orderKeyStr);
+//        Object orderObject = redisTemplate.opsForHash().get("orders", orderKey.toString());
+//        if (orderObject == null) {
+//            return ResponseEntity.badRequest().body("주문을 찾을 수 없습니다.");
+//        }
+//
+//        PrepareOrderDto orderDto = objectMapper.convertValue(orderObject, PrepareOrderDto.class);
+//
+//        try {
+//            // 2. 주문 객체를 실제 주문 테이블에 저장
+//            Order order = orderDto.toEntity();
+//            order.setStatus(OrderStatus.COMPLETED);  // 주문 상태를 COMPLETED로 설정
+//            orderRepository.save(order);
+//
+//            // 3. 저장된 주문 정보 기반으로 재고 차감 수행
+//            Set<OrderItem> orderItems = order.getItems();
+//            for (OrderItem item : orderItems) {
+//                Long productId = item.getProductId();
+//                int quantityOrdered = item.getQuantity();
+//
+//                // 상품 서비스에 재고 차감 요청
+//                productServiceClient.checkAndDeductStock(productId, quantityOrdered);
+//                // todo : 지금은 받아온 결과 뭐 쓰는건 없는데 추후에 에러메세지를 반환 받을 때
+//                // 추가적인 처리하면 좋겠다 !
+//            }
+//
+//            // 4. 주문 성공 후 Redis에서 해당 주문 데이터 삭제
+//            redisTemplate.opsForHash().delete("orders", orderKey.toString());
+//            redisTemplate.delete(userOrderKey);
+//
+//            return ResponseEntity.ok("결제가 완료되었습니다.");
+//        } catch (Exception e) {
+//            // 예외 발생 시 롤백 자동 수행 (트랜잭션 관리에 의해)
+//            log.error("결제 처리 중 오류 발생", e);
+//            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("결제 처리 중 오류가 발생했습니다.");
+//        }
+//    }
+
+    /**
+     * 결제 완료
+     */
+
     public ResponseEntity<?> completePayment(String userId) {
-        // 1. 주문 키와 주문 객체 조회
-        String userOrderKey = "user_orders:" + userId;
-        String orderKeyStr = (String) redisTemplate.opsForValue().get(userOrderKey);
-
-        if (orderKeyStr == null) {
-            return ResponseEntity.badRequest().body("해당 사용자의 주문이 없습니다.");
-        }
-
-        Long orderKey = Long.parseLong(orderKeyStr);
-        Object orderObject = redisTemplate.opsForHash().get("orders", orderKey.toString());
-        if (orderObject == null) {
-            return ResponseEntity.badRequest().body("주문을 찾을 수 없습니다.");
-        }
-
-        PrepareOrderDto orderDto = objectMapper.convertValue(orderObject, PrepareOrderDto.class);
-
         try {
-            // 2. 주문 객체를 실제 주문 테이블에 저장
-            Order order = orderDto.toEntity();
-            order.setStatus(OrderStatus.COMPLETED);  // 주문 상태를 COMPLETED로 설정
-            orderRepository.save(order);
-
-            // 3. 저장된 주문 정보 기반으로 재고 차감 수행
-            Set<OrderItem> orderItems = order.getItems();
-            for (OrderItem item : orderItems) {
-                Long productId = item.getProductId();
-                int quantityOrdered = item.getQuantity();
-
-                // 상품 서비스에 재고 차감 요청
-                productServiceClient.checkAndDeductStock(productId, quantityOrdered);
-                // todo : 지금은 받아온 결과 뭐 쓰는건 없는데 추후에 에러메세지를 반환 받을 때
-                // 추가적인 처리하면 좋겠다 !
+            log.debug("시작: completePayment for user {}", userId);
+            String userOrderKey = "user_orders:" + userId;
+            String orderKeyStr = (String) redisTemplate.opsForValue().get(userOrderKey);
+            if (orderKeyStr == null) {
+                throw new IllegalArgumentException("해당 사용자의 주문이 없습니다.");
             }
+            Long orderKey = Long.parseLong(orderKeyStr);
 
-            // 4. 주문 성공 후 Redis에서 해당 주문 데이터 삭제
-            redisTemplate.opsForHash().delete("orders", orderKey.toString());
-            redisTemplate.delete(userOrderKey);
-
+            PrepareOrderDto orderDto = getOrderFromRedis(orderKey);
+            log.debug("Redis에서 주문 정보 조회 완료: {}", orderDto);
+            Order savedOrder = saveOrder(orderDto);
+            log.debug("주문 저장 완료: {}, {}", savedOrder.getId(), orderKey);
+            deductStock(savedOrder);
+            log.debug("재고 차감 완료");
+            cleanupRedisData(userId, orderKey);
+            log.debug("Redis 데이터 정리 완료");
             return ResponseEntity.ok("결제가 완료되었습니다.");
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest().body(e.getMessage());
         } catch (Exception e) {
-            // 예외 발생 시 롤백 자동 수행 (트랜잭션 관리에 의해)
             log.error("결제 처리 중 오류 발생", e);
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("결제 처리 중 오류가 발생했습니다.");
+        } finally {
+            log.debug("종료: completePayment for user {}", userId);
         }
     }
 
+    private PrepareOrderDto getOrderFromRedis(Long orderKey) {
+
+        Object orderObject = redisTemplate.opsForHash().get("orders", orderKey.toString());
+        if (orderObject == null) {
+            throw new IllegalArgumentException("주문을 찾을 수 없습니다.");
+        }
+        return objectMapper.convertValue(orderObject, PrepareOrderDto.class);
+    }
+
+    @Transactional
+    public Order saveOrder(PrepareOrderDto orderDto) {
+        try {
+            Order order = orderDto.toEntity();
+            order.setStatus(OrderStatus.COMPLETED);
+            return orderRepository.save(order);
+        } catch (DataAccessException e) {
+            log.error("주문 저장 중 데이터베이스 오류 발생", e);
+            throw new RuntimeException("주문을 저장하는 중 오류가 발생했습니다.", e);
+        } catch (Exception e) {
+            log.error("주문 저장 중 예상치 못한 오류 발생", e);
+            throw new RuntimeException("주문을 저장하는 중 예상치 못한 오류가 발생했습니다.", e);
+        }
+    }
+
+    @Transactional
+    public void deductStock(Order order) {
+        for (OrderItem item : order.getItems()) {
+            Long productId = item.getProductId();
+            int quantityOrdered = item.getQuantity();
+            try {
+                productServiceClient.checkAndDeductStock(productId, quantityOrdered);
+            } catch (Exception e) {
+                log.error("재고 차감 중 오류 발생. 상품 ID: {}", productId, e);
+                throw new RuntimeException("재고 차감 중 오류가 발생했습니다. 상품 ID: " + productId, e);
+            }
+        }
+    }
+
+    private void cleanupRedisData(String userId, Long orderKey) {
+        try {
+            String userOrderKey = "user_orders:" + userId;
+            redisTemplate.opsForHash().delete("orders", orderKey.toString());
+            redisTemplate.delete(userOrderKey);
+        } catch (Exception e) {
+            log.error("Redis 데이터 정리 중 오류 발생", e);
+            // Redis 정리 실패는 크리티컬한 오류가 아니므로 예외를 던지지 않고 로그만 남깁니다.
+        }
+    }
 
 
 }
