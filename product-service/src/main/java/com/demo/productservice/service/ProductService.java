@@ -34,11 +34,6 @@ public class ProductService {
         productRepository.save(product);
     }
 
-//    // 상품 리스트 조회
-//    public List<Product> getAllProducts() {
-//        return productRepository.findAll();
-//    }
-
     // DTO 변환 포함 상품 리스트 조회
     public List<ProductListResponseDto> getAllProducts() {
         return productRepository.findAll()
@@ -52,10 +47,6 @@ public class ProductService {
                 .collect(Collectors.toList());
     }
 
-//    // 상품 상세 조회
-//    public Optional<Product> findItemById(Long id) {
-//        return productRepository.findById(id);
-//    }
 
     // 상품 상세 조회 -> 재고만 레디스 임시 재고로 보여줄 것 !! 
     public Optional<ProductResponseDto> findItemDetailById(Long id) {

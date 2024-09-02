@@ -10,7 +10,6 @@ import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 import java.util.Optional;
-import java.util.stream.Collectors;
 
 @RestController
 @RequestMapping("/api/products")
@@ -47,17 +46,6 @@ public class ProductController {
             return ResponseEntity.status(404).body(null);
         }
     }
-
-    /**
-     * 임시 재고 수량 조회
-     * @param id 상품 ID
-     * @return 임시 재고 수량
-     */
-//    @GetMapping("/{id}/stock")
-//    public ResponseEntity<Integer> getRemainingStock(@PathVariable("id") Long id) {
-//        int remainingStock = productService.getStockFromRedis(id);
-//        return ResponseEntity.ok(remainingStock);
-//    }
 
     /**
      * order-service와 내부 소통하는 api

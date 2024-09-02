@@ -10,6 +10,8 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import feign.FeignException;
 import jakarta.persistence.OptimisticLockException;
 import lombok.extern.slf4j.Slf4j;
+import org.redisson.api.RLock;
+import org.redisson.api.RedissonClient;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -36,14 +38,17 @@ public class OrderService {
     private final RedisTemplate<String, Object> redisTemplate;
     private ObjectMapper objectMapper;
     private static final String ORDER_KEY_SEQUENCE = "order:key:sequence";
+    private final RedissonClient redissonClient;
+
 
 
     public OrderService(OrderRepository orderRepository, ProductServiceClient productServiceClient, RedisTemplate<String, Object> redisTemplate
-    , ObjectMapper objectMapper) {
+    , ObjectMapper objectMapper, RedissonClient redissonClient) {
         this.orderRepository = orderRepository;
         this.productServiceClient = productServiceClient;
         this.redisTemplate = redisTemplate;
         this.objectMapper = objectMapper;
+        this.redissonClient = redissonClient;
     }
 
     // 주문 조회
@@ -85,85 +90,6 @@ public class OrderService {
 
     }
 
-    // todo : 리팩토링
-   /* @Transactional // 트랜잭션 관리 적용
-    public Order createOrder(String userId, List<OrderItemDto> orderItems) {
-        if (orderItems == null || orderItems.isEmpty()) {
-            throw new RuntimeException("주문 항목이 비어있습니다.");
-        }
-
-        int totalPrice = 0;
-        List<ProductResponseDto> productsToUpdate = new ArrayList<>();
-
-        try {
-            // 모든 상품의 재고 확인
-            for (OrderItemDto dto : orderItems) {
-                ResponseEntity<ProductResponseDto> responseEntity = productServiceClient.getProductById(dto.getProductId());
-
-                if (responseEntity == null || !responseEntity.getStatusCode().is2xxSuccessful()) {
-                    throw new RuntimeException("상품 정보를 조회할 수 없습니다: " + dto.getProductId());
-                }
-
-                ProductResponseDto product = responseEntity.getBody();
-                if (product == null) {
-                    throw new RuntimeException("해당 상품을 찾을 수 없습니다: " + dto.getProductId());
-                }
-
-                // 재고 확인
-                if (product.getStock() < dto.getQuantity()) {
-                    throw new RuntimeException("상품 재고 부족: " + product.getId());
-                }
-
-                // 총 가격 계산
-                totalPrice += product.getPrice() * dto.getQuantity();
-                productsToUpdate.add(product);
-            }
-
-            // 모든 재고 확인이 끝난 후 재고 차감
-            for (OrderItemDto dto : orderItems) {
-                ProductResponseDto product = productsToUpdate.stream()
-                        .filter(p -> p.getId().equals(dto.getProductId()))
-                        .findFirst()
-                        .orElseThrow(() -> new RuntimeException("상품 정보를 찾을 수 없습니다: " + dto.getProductId()));
-
-                int updatedStock = product.getStock() - dto.getQuantity();
-                productServiceClient.updateProductStock(product.getId(), updatedStock);
-            }
-
-            // 주문 객체 생성 및 설정
-            Order order = new Order();
-            order.setUserId(userId);
-            order.setStatus(OrderStatus.PENDING);
-            order.setOrderDate(LocalDateTime.now());
-            order.setTotalPrice(totalPrice);
-
-            // 주문 항목 추가
-            for (OrderItemDto dto : orderItems) {
-                ProductResponseDto product = productsToUpdate.stream()
-                        .filter(p -> p.getId().equals(dto.getProductId()))
-                        .findFirst()
-                        .orElseThrow(() -> new RuntimeException("상품 정보를 찾을 수 없습니다: " + dto.getProductId()));
-
-                OrderItem orderItem = new OrderItem();
-                orderItem.setProductId(dto.getProductId());
-                orderItem.setQuantity(dto.getQuantity());
-                orderItem.setPrice(product.getPrice());
-                orderItem.setOrder(order);
-
-                order.getItems().add(orderItem);
-            }
-
-            // 주문 저장
-            orderRepository.save(order);
-            return order;
-
-        } catch (Exception e) {
-            // 예외 발생 시 롤백 자동 수행 (트랜잭션 관리에 의해)
-            log.error("주문 생성 중 오류 발생", e);
-            throw e;
-        }
-    }*/
-
     // 주문 취소 (결제 완료 후 - 배송준비전까지 가능)
     @Transactional
     public void cancelOrder(Long orderId) {
@@ -201,7 +127,7 @@ public class OrderService {
         orderRepository.save(order);
     }
 
-    // 주문 진입 ( 실제 db 반영 x -> 레디스에 저장 )
+  /*  // 주문 진입 ( 실제 db 반영 x -> 레디스에 저장 )
     @Transactional(readOnly = false)
     public Long prepareOrder(String userId, List<PrepareOrderRequestDto> prepareOrderRequestDtoList) {
         // 1. 주문에 대한 고유한 키 생성 (Long)
@@ -254,6 +180,67 @@ public class OrderService {
         redisTemplate.expire("orders:" + orderKey, 3, TimeUnit.MINUTES);
 
         return orderKey; // Long 타입 주문 키 반환
+    }*/
+
+    // prepareOrder 메서드에 락 적용
+    @Transactional(readOnly = false)
+    public Long prepareOrder(String userId, List<PrepareOrderRequestDto> prepareOrderRequestDtoList) {
+        String lockKey = "lock:order:" + userId;  // 각 사용자별로 고유한 락 키 생성
+        RLock lock = redissonClient.getLock(lockKey);  // Redis 기반의 락 객체 생성
+
+        try {
+            // 락을 획득 (최대 대기 시간 5초, 락 만료 시간 10초 설정)
+            boolean available = lock.tryLock(5, 10, TimeUnit.SECONDS);
+            if (!available) {
+                throw new RuntimeException("잠금을 획득할 수 없습니다. 다시 시도해 주세요.");
+            }
+
+            // 락을 획득한 이후의 작업
+            Long orderKey = redisTemplate.opsForValue().increment(ORDER_KEY_SEQUENCE);
+            if (orderKey == null) {
+                throw new IllegalStateException("주문 키 생성에 실패했습니다.");
+            }
+
+            String userOrderKey = "user_orders:" + userId;
+            redisTemplate.opsForValue().set(userOrderKey, orderKey.toString());
+
+            for (PrepareOrderRequestDto requestDto : prepareOrderRequestDtoList) {
+                Long productId = requestDto.getProductId();
+                Integer quantityToOrder = requestDto.getQuantity();
+                String stockKey = "stock:" + productId;
+
+                Integer currentStock = (Integer) redisTemplate.opsForValue().get(stockKey);
+
+                if (currentStock == null) {
+                    Integer dbStock = productServiceClient.getProductByInternalId(productId).getBody();
+                    currentStock = dbStock;
+                    redisTemplate.opsForValue().set(stockKey, currentStock);
+                }
+
+                if (currentStock < quantityToOrder) {
+                    throw new IllegalArgumentException("상품 재고가 부족합니다: " + productId);
+                }
+
+                redisTemplate.opsForValue().decrement(stockKey, quantityToOrder);
+            }
+
+            PrepareOrderDto prepareOrderDto = new PrepareOrderDto();
+            prepareOrderDto.setUserId(userId);
+            prepareOrderDto.setOrderId(orderKey);
+            prepareOrderDto.setOrderItems(prepareOrderRequestDtoList);
+            prepareOrderDto.setCreatedAt(LocalDateTime.now());
+            prepareOrderDto.setStatus(OrderStatus.PENDING);
+
+            redisTemplate.opsForHash().put("orders", orderKey.toString(), prepareOrderDto);
+            redisTemplate.expire("orders:" + orderKey, 3, TimeUnit.MINUTES);
+
+            return orderKey;
+        } catch (InterruptedException e) {
+            throw new RuntimeException("잠금 대기 중 인터럽트가 발생했습니다.", e);
+        } finally {
+            // 락 해제
+            lock.unlock();
+        }
     }
 
     // 결제 진입 ( 실제 db 반영 x -> 레디스에 저장 )
@@ -291,65 +278,6 @@ public class OrderService {
 
         return orderKey;  // Long 타입 결제 키 반환
     }
-
-  /*  // 결제 완료시
-    @Transactional
-    public ResponseEntity<?> completePayment(String userId) {
-        // 1. 주문 키와 주문 객체 조회
-        String userOrderKey = "user_orders:" + userId;
-        String orderKeyStr = (String) redisTemplate.opsForValue().get(userOrderKey);
-
-        if (orderKeyStr == null) {
-            return ResponseEntity.badRequest().body("해당 사용자의 주문이 없습니다.");
-        }
-
-        Long orderKey = Long.parseLong(orderKeyStr);
-        Object orderObject = redisTemplate.opsForHash().get("orders", orderKey.toString());
-        if (orderObject == null) {
-            return ResponseEntity.badRequest().body("주문을 찾을 수 없습니다.");
-        }
-
-        PrepareOrderDto orderDto = objectMapper.convertValue(orderObject, PrepareOrderDto.class);
-
-        try {
-            // 2. 주문 객체를 실제 주문 테이블에 저장
-            Order order = orderDto.toEntity();
-            order.setStatus(OrderStatus.COMPLETED);  // 주문 상태를 COMPLETED로 설정
-            orderRepository.save(order);
-
-            // 3. 저장된 주문 정보 기반으로 재고 차감 수행
-            Set<OrderItem> orderItems = order.getItems();
-            for (OrderItem item : orderItems) {
-                Long productId = item.getProductId();
-                int quantityOrdered = item.getQuantity();
-
-                // 상품 서비스에서 실제 db 재고 가져오기 !
-                Integer currentStock = productServiceClient.getProductByInternalId(productId).getBody();
-
-                // 재고 확인 및 차감
-                int updatedStock = currentStock - quantityOrdered;
-                if (updatedStock < 0) {
-                    throw new RuntimeException("상품 재고 부족: " + productId);
-                }
-                // todo : 재고 차감 요청 -> 동시성 문제 -> 재고를 확인하는 시점이랑 차감하는 시점 시간 차이날 가능성
-                // -> 재고 확인 하고 차감하는 걸 오더에서 x - > 상품 서비스에서 처리
-                // -> 근데 이 부분을 결국엔 이 결제 완료 메서드에서 안 하려면 여기서 상품서비스 클라이언트로
-                // 소통 받는 부분으로 대체해서 재고 확인하고 차감하는 api를 호출한다는 건데 그게 그거 아니고 ?!....헷갈린다.
-
-                // 상품 서비스에 차감한 재고 정보 넘겨서 db 상품 재고 업데이트 !
-                productServiceClient.updateProductStock(productId, updatedStock);
-            }
-            // 4. 주문 성공 후 Redis에서 해당 주문 데이터 삭제
-            redisTemplate.opsForHash().delete("orders", orderKey.toString());
-            redisTemplate.delete(userOrderKey);
-
-            return ResponseEntity.ok("결제가 완료되었습니다.");
-        } catch (Exception e) {
-            // 예외 발생 시 롤백 자동 수행 (트랜잭션 관리에 의해)
-            log.error("결제 처리 중 오류 발생", e);
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("결제 처리 중 오류가 발생했습니다.");
-        }
-    }*/
 
     /**
      * 결제 완료시
