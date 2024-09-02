@@ -12,7 +12,10 @@ import jakarta.persistence.OptimisticLockException;
 import lombok.extern.slf4j.Slf4j;
 import org.redisson.api.RLock;
 import org.redisson.api.RedissonClient;
+import org.springframework.dao.DataAccessException;
+import org.springframework.data.redis.core.RedisOperations;
 import org.springframework.data.redis.core.RedisTemplate;
+import org.springframework.data.redis.core.SessionCallback;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.scheduling.annotation.Scheduled;
@@ -23,6 +26,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
@@ -127,7 +131,7 @@ public class OrderService {
         orderRepository.save(order);
     }
 
-  /*  // 주문 진입 ( 실제 db 반영 x -> 레디스에 저장 )
+   // 주문 진입 ( 실제 db 반영 x -> 레디스에 저장 )
     @Transactional(readOnly = false)
     public Long prepareOrder(String userId, List<PrepareOrderRequestDto> prepareOrderRequestDtoList) {
         // 1. 주문에 대한 고유한 키 생성 (Long)
@@ -180,68 +184,9 @@ public class OrderService {
         redisTemplate.expire("orders:" + orderKey, 3, TimeUnit.MINUTES);
 
         return orderKey; // Long 타입 주문 키 반환
-    }*/
-
-    // prepareOrder 메서드에 락 적용
-    @Transactional(readOnly = false)
-    public Long prepareOrder(String userId, List<PrepareOrderRequestDto> prepareOrderRequestDtoList) {
-        String lockKey = "lock:order:" + userId;  // 각 사용자별로 고유한 락 키 생성
-        RLock lock = redissonClient.getLock(lockKey);  // Redis 기반의 락 객체 생성
-
-        try {
-            // 락을 획득 (최대 대기 시간 5초, 락 만료 시간 10초 설정)
-            boolean available = lock.tryLock(5, 10, TimeUnit.SECONDS);
-            if (!available) {
-                throw new RuntimeException("잠금을 획득할 수 없습니다. 다시 시도해 주세요.");
-            }
-
-            // 락을 획득한 이후의 작업
-            Long orderKey = redisTemplate.opsForValue().increment(ORDER_KEY_SEQUENCE);
-            if (orderKey == null) {
-                throw new IllegalStateException("주문 키 생성에 실패했습니다.");
-            }
-
-            String userOrderKey = "user_orders:" + userId;
-            redisTemplate.opsForValue().set(userOrderKey, orderKey.toString());
-
-            for (PrepareOrderRequestDto requestDto : prepareOrderRequestDtoList) {
-                Long productId = requestDto.getProductId();
-                Integer quantityToOrder = requestDto.getQuantity();
-                String stockKey = "stock:" + productId;
-
-                Integer currentStock = (Integer) redisTemplate.opsForValue().get(stockKey);
-
-                if (currentStock == null) {
-                    Integer dbStock = productServiceClient.getProductByInternalId(productId).getBody();
-                    currentStock = dbStock;
-                    redisTemplate.opsForValue().set(stockKey, currentStock);
-                }
-
-                if (currentStock < quantityToOrder) {
-                    throw new IllegalArgumentException("상품 재고가 부족합니다: " + productId);
-                }
-
-                redisTemplate.opsForValue().decrement(stockKey, quantityToOrder);
-            }
-
-            PrepareOrderDto prepareOrderDto = new PrepareOrderDto();
-            prepareOrderDto.setUserId(userId);
-            prepareOrderDto.setOrderId(orderKey);
-            prepareOrderDto.setOrderItems(prepareOrderRequestDtoList);
-            prepareOrderDto.setCreatedAt(LocalDateTime.now());
-            prepareOrderDto.setStatus(OrderStatus.PENDING);
-
-            redisTemplate.opsForHash().put("orders", orderKey.toString(), prepareOrderDto);
-            redisTemplate.expire("orders:" + orderKey, 3, TimeUnit.MINUTES);
-
-            return orderKey;
-        } catch (InterruptedException e) {
-            throw new RuntimeException("잠금 대기 중 인터럽트가 발생했습니다.", e);
-        } finally {
-            // 락 해제
-            lock.unlock();
-        }
     }
+
+
 
     // 결제 진입 ( 실제 db 반영 x -> 레디스에 저장 )
     @Transactional
@@ -331,5 +276,7 @@ public class OrderService {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("결제 처리 중 오류가 발생했습니다.");
         }
     }
+
+
 
 }
