@@ -53,7 +53,8 @@ public class ProductService {
     }
 
 
-    // 상품 상세 조회 -> 재고만 레디스 임시 재고로 보여줄 것 !! 
+    // 상품 상세 조회 -> 재고만 레디스 임시 재고로 보여줄 것 !!
+    @Transactional(readOnly = false)  // 트랜잭션 적용
     public Optional<ProductResponseDto> findItemDetailById(Long id) {
         Optional<Product> productOpt = productRepository.findByIdWithLock(id);
         if (productOpt.isPresent()) {
@@ -169,8 +170,8 @@ public class ProductService {
                     product.setStock(currentStock - quantityToOrder);
                     productRepository.save(product);
 
-                    // Redis 캐시된 재고도 업데이트
-                    redisTemplate.opsForValue().set("stock:" + productId, String.valueOf(currentStock - quantityToOrder));
+//                    // Redis 캐시된 재고도 업데이트
+//                    redisTemplate.opsForValue().set("stock:" + productId, String.valueOf(currentStock - quantityToOrder));
 
                 } finally {
                     lock.unlock();  // 락 해제

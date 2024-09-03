@@ -51,16 +51,16 @@ public class ProductController {
      * order-service와 내부 소통하는 api
      * 실제 상품 db 재고 업데이트
      */
-    @PutMapping("/{id}/stock")
-    public ResponseEntity<String> updateProductStock(@PathVariable("id") Long id, @RequestParam("stock") int stock) {
-        try {
-            // 서비스 레이어를 통해 재고 업데이트
-            productService.updateProductStock(id, stock);
-            return ResponseEntity.ok("재고가 성공적으로 업데이트되었습니다.");
-        } catch (RuntimeException e) {
-            return ResponseEntity.badRequest().body("재고 업데이트 중 오류 발생: " + e.getMessage());
-        }
-    }
+//    @PutMapping("/{id}/stock")
+//    public ResponseEntity<String> updateProductStock(@PathVariable("id") Long id, @RequestParam("stock") int stock) {
+//        try {
+//            // 서비스 레이어를 통해 재고 업데이트
+//            productService.updateProductStock(id, stock);
+//            return ResponseEntity.ok("재고가 성공적으로 업데이트되었습니다.");
+//        } catch (RuntimeException e) {
+//            return ResponseEntity.badRequest().body("재고 업데이트 중 오류 발생: " + e.getMessage());
+//        }
+//    }
 
     /**
      *  order-service와 소통하는 내부 api
