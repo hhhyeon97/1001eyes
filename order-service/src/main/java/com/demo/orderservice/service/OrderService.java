@@ -187,7 +187,6 @@ public class OrderService {
     }
 
 
-
     // 결제 진입 ( 실제 db 반영 x -> 레디스에 저장 )
     @Transactional
     public Long preparePayment(String userId, List<PaymentRequestDto> paymentRequestDtoList) {
