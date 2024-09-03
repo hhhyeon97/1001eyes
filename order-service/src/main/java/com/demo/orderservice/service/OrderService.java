@@ -131,7 +131,7 @@ public class OrderService {
         orderRepository.save(order);
     }
 
-   // 주문 진입 ( 실제 db 반영 x -> 레디스에 저장 )
+  /* // 주문 진입 ( 실제 db 반영 x -> 레디스에 저장 )
     @Transactional(readOnly = false)
     public Long prepareOrder(String userId, List<PrepareOrderRequestDto> prepareOrderRequestDtoList) {
         // 1. 주문에 대한 고유한 키 생성 (Long)
@@ -185,7 +185,156 @@ public class OrderService {
 
         return orderKey; // Long 타입 주문 키 반환
     }
+*/
+/*
+    // 주문 진입 ( 실제 db 반영 x -> 레디스에 저장 )
+    @Transactional(readOnly = false)
+    public Long prepareOrder(String userId, List<PrepareOrderRequestDto> prepareOrderRequestDtoList) {
+        // 1. 주문에 대한 고유한 키 생성 (Long)
+        Long orderKey = redisTemplate.opsForValue().increment(ORDER_KEY_SEQUENCE);
+        if (orderKey == null) {
+            throw new IllegalStateException("주문 키 생성에 실패했습니다.");
+        }
 
+        // ++ 주문과 사용자 간의 매핑 저장
+        String userOrderKey = "user_orders:" + userId;
+        redisTemplate.opsForValue().set(userOrderKey, orderKey.toString());
+
+        try {
+            // 2. 각 상품에 대해 재고 확인 및 차감
+            for (PrepareOrderRequestDto requestDto : prepareOrderRequestDtoList) {
+                Long productId = requestDto.getProductId();
+                Integer quantityToOrder = requestDto.getQuantity();
+                String stockKey = "stock:" + productId;
+
+                // 레디스에서 재고 조회
+                Integer currentStock = (Integer) redisTemplate.opsForValue().get(stockKey);
+
+                // Redis에 재고 정보가 없으면 ProductService를 통해 재고 조회
+                if (currentStock == null) {
+                    log.info("db 조회");
+                    // ProductServiceClient를 사용하여 실제 DB에서 재고 조회
+                    Integer dbStock = productServiceClient.getProductByInternalId(productId).getBody();
+
+                    currentStock = dbStock; // 상품의 실제 재고
+
+                    // Redis에 재고 정보 캐싱 (초기값 설정)
+                    redisTemplate.opsForValue().set(stockKey, currentStock);
+                }
+
+                // 재고가 부족한 경우 예외 처리
+                if (currentStock < quantityToOrder) {
+                    throw new IllegalArgumentException("상품 재고가 부족합니다: " + productId);
+                }
+
+                // Redis에서만 재고 차감
+                redisTemplate.opsForValue().decrement(stockKey, quantityToOrder);
+            }
+
+            // 3. 주문 객체 생성 (레디스에 담을 임시 dto 객체)
+            PrepareOrderDto prepareOrderDto = new PrepareOrderDto();
+            prepareOrderDto.setUserId(userId);
+            prepareOrderDto.setOrderItems(prepareOrderRequestDtoList);
+            prepareOrderDto.setCreatedAt(LocalDateTime.now());
+            prepareOrderDto.setStatus(OrderStatus.PENDING);
+
+            // 4. Redis에 주문 객체 저장
+            redisTemplate.opsForHash().put("orders", orderKey.toString(), prepareOrderDto);
+
+            // ++ 결제에 대한 TTL 설정 (10분 -> 테스트 : 3분)
+            redisTemplate.expire("orders:" + orderKey, 3, TimeUnit.MINUTES);
+
+            return orderKey; // Long 타입 주문 키 반환
+
+        } catch (Exception e) {
+            // 예외 발생 시 임시오더키 삭제
+            redisTemplate.delete(userOrderKey);
+
+            // 로그 남기기
+            log.error("주문 준비 중 오류 발생: " + e.getMessage(), e);
+
+            // 예외 재던지기
+            throw e;
+
+        }
+    }*/
+
+    @Transactional(readOnly = false)
+    public Long prepareOrder(String userId, List<PrepareOrderRequestDto> prepareOrderRequestDtoList) {
+        // 1. 주문에 대한 고유한 키 생성 (Long)
+        Long orderKey = redisTemplate.opsForValue().increment(ORDER_KEY_SEQUENCE);
+        if (orderKey == null) {
+            throw new IllegalStateException("주문 키 생성에 실패했습니다.");
+        }
+        // ++ 주문과 사용자 간의 매핑 저장
+        String userOrderKey = "user_orders:" + userId;
+        redisTemplate.opsForValue().set(userOrderKey, orderKey.toString());
+
+        try {
+            // 2. 각 상품에 대해 재고 확인 및 차감
+            for (PrepareOrderRequestDto requestDto : prepareOrderRequestDtoList) {
+                Long productId = requestDto.getProductId();
+                Integer quantityToOrder = requestDto.getQuantity();
+                String stockKey = "stock:" + productId;
+
+                // 상품별로 개별 락 생성 및 적용
+                RLock productLock = redissonClient.getLock("stock_lock:" + productId);
+                try {
+                    if (productLock.tryLock(5, 10, TimeUnit.SECONDS)) {
+                        try {
+                            // 레디스에서 재고 조회
+                            Integer currentStock = (Integer) redisTemplate.opsForValue().get(stockKey);
+
+                            // Redis에 재고 정보가 없으면 ProductService를 통해 재고 조회
+                            if (currentStock == null) {
+                                log.info("db 조회");
+                                // ProductServiceClient를 사용하여 실제 DB에서 재고 조회
+                                Integer dbStock = productServiceClient.getProductByInternalId(productId).getBody();
+                                currentStock = dbStock; // 상품의 실제 재고
+                                // Redis에 재고 정보 캐싱 (초기값 설정)
+                                redisTemplate.opsForValue().set(stockKey, currentStock);
+                            }
+
+                            // 재고가 부족한 경우 예외 처리
+                            if (currentStock < quantityToOrder) {
+                                throw new IllegalArgumentException("상품 재고가 부족합니다: " + productId);
+                            }
+
+                            // Redis에서만 재고 차감
+                            redisTemplate.opsForValue().decrement(stockKey, quantityToOrder);
+                        } finally {
+                            productLock.unlock();  // 락 해제
+                        }
+                    } else {
+                        throw new RuntimeException("재고 차감을 위한 락을 획득하지 못했습니다.");
+                    }
+                } catch (InterruptedException e) {
+                    Thread.currentThread().interrupt();
+                    throw new RuntimeException("재고 차감 중 인터럽트 발생", e);
+                }
+            }
+
+            // 3. 주문 객체 생성 (레디스에 담을 임시 dto 객체)
+            PrepareOrderDto prepareOrderDto = new PrepareOrderDto();
+            prepareOrderDto.setUserId(userId);
+            prepareOrderDto.setOrderItems(prepareOrderRequestDtoList);
+            prepareOrderDto.setCreatedAt(LocalDateTime.now());
+            prepareOrderDto.setStatus(OrderStatus.PENDING);
+
+            // 4. Redis에 주문 객체 저장
+            redisTemplate.opsForHash().put("orders", orderKey.toString(), prepareOrderDto);
+
+            // ++ 결제에 대한 TTL 설정 (10분 -> 테스트 : 3분)
+            redisTemplate.expire("orders:" + orderKey, 3, TimeUnit.MINUTES);
+
+            return orderKey; // Long 타입 주문 키 반환
+        } catch (Exception e) {
+            log.error("주문 준비 중 예외 발생", e);
+            // 실패한 경우, 사용자와 매핑된 임시오더키 삭제
+            redisTemplate.delete(userOrderKey);
+            throw e;
+        }
+    }
 
     // 결제 진입 ( 실제 db 반영 x -> 레디스에 저장 )
     @Transactional

@@ -16,7 +16,6 @@ import java.util.stream.Collectors;
 @Setter
 public class PrepareOrderDto implements Serializable {
 
-    private Long orderId;
     private String userId;
     private List<PrepareOrderRequestDto> orderItems;
     private LocalDateTime createdAt;
@@ -27,7 +26,6 @@ public class PrepareOrderDto implements Serializable {
     // toEntity 메서드 -> PrepareOrderDto를 JPA 엔티티인 Order로 변환하는 역할
     public Order toEntity() {
         Order order = new Order();
-        order.setId(this.orderId);
         order.setUserId(this.userId);
         order.setOrderDate(this.createdAt);
 
