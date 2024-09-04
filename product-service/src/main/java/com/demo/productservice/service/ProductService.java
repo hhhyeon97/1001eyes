@@ -132,22 +132,6 @@ public class ProductService {
         }
     }
 
-    /*@Transactional
-    public void checkAndDeductStock(Long productId, int quantityToOrder) {
-        // 비관적 락을 걸고 상품을 조회
-        Product product = productRepository.findByIdWithLock(productId)
-                .orElseThrow(() -> new IllegalArgumentException("상품을 찾을 수 없습니다: " + productId));
-
-        int currentStock = product.getStock();
-
-        if (currentStock < quantityToOrder) {
-            throw new RuntimeException("상품 재고가 부족합니다: " + productId);
-        }
-        // 재고 차감
-        product.setStock(currentStock - quantityToOrder);
-        productRepository.save(product);
-    }*/
-
     @Transactional
     public void checkAndDeductStock(Long productId, int quantityToOrder) {
         RLock lock = redissonClient.getLock("stock_lock:" + productId);  // 락 생성

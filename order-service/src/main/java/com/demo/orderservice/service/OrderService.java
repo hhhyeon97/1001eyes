@@ -259,6 +259,7 @@ public class OrderService {
         }
     }*/
 
+    // 주문진입
     @Transactional(readOnly = false)
     public Long prepareOrder(String userId, List<PrepareOrderRequestDto> prepareOrderRequestDtoList) {
         // 1. 주문에 대한 고유한 키 생성 (Long)
@@ -361,7 +362,7 @@ public class OrderService {
         // 3. 결제 정보 추가 및 결제 상태로 전환
         orderDto.setPaymentItems(paymentRequestDtoList);
         orderDto.setStatus(OrderStatus.PAYING);
-        orderDto.setPaymentAt(LocalDateTime.now());
+//        orderDto.setPaymentAt(LocalDateTime.now());
 
         // 4. Redis에 업데이트된 주문 객체 저장
         redisTemplate.opsForHash().put("orders", orderKey.toString(), orderDto);
