@@ -21,7 +21,7 @@ public class PrepareOrderDto implements Serializable {
     private LocalDateTime createdAt;
     private OrderStatus status;  // 주문 상태
     private List<PaymentRequestDto> paymentItems;  // 결제 아이템 (결제 단계에서 추가)
-    private LocalDateTime paymentAt;  // 결제 진입 시간 (이건 나중에 필요 없을 수도 일단 두기)
+//    private LocalDateTime paymentAt;  // 결제 진입 시간 (이건 나중에 필요 없을 수도 일단 두기)
 
     // toEntity 메서드 -> PrepareOrderDto를 JPA 엔티티인 Order로 변환하는 역할
     public Order toEntity() {
