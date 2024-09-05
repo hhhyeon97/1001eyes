@@ -132,13 +132,13 @@ public class ProductService {
         }
     }
 
-    @Transactional
+   @Transactional
     public void checkAndDeductStock(Long productId, int quantityToOrder) {
         RLock lock = redissonClient.getLock("stock_lock:" + productId);  // 락 생성
 
         try {
             // 락을 획득하려고 시도 (5초 동안 시도하고, 10초 동안 락이 유지됨)
-            if (lock.tryLock(5, 10, TimeUnit.SECONDS)) {
+            if (lock.tryLock(3, 6, TimeUnit.SECONDS)) {
                 try {
                     // 비관적 락을 걸고 상품을 조회
                     Product product = productRepository.findByIdWithLock(productId)
@@ -172,6 +172,22 @@ public class ProductService {
             throw new RuntimeException("재고 차감 중 오류가 발생했습니다.", e);
         }
     }
+
+   /* @Transactional
+    public void checkAndDeductStock(Long productId, int quantityToOrder) {
+                    Product product = productRepository.findById(productId)
+                            .orElseThrow(() -> new IllegalArgumentException("상품을 찾을 수 없습니다: " + productId));
+
+                    int currentStock = product.getStock();
+
+                    if (currentStock < quantityToOrder) {
+                        throw new RuntimeException("상품 재고가 부족합니다: " + productId);
+                    }
+                    // 재고 차감
+                    product.setStock(currentStock - quantityToOrder);
+                    productRepository.save(product);
+
+    }*/
 
 
 }
