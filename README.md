@@ -17,6 +17,7 @@
 ## Overview
 
 ## ERD
+![img.png](etc/image/img.png)
 
 ## Tech Stack
 
