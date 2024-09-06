@@ -119,7 +119,7 @@ public class ProductService {
     }
 
 
-    // 상품의 stock 수량을 조회하는 메서드
+ /*   // 상품의 stock 수량을 조회하는 메서드
     @Transactional
     public int getProductStock(Long productId) {
         // DB에서 Product 엔티티를 찾고 stock 수량 반환
@@ -130,6 +130,14 @@ public class ProductService {
             // 상품이 없을 경우 예외 처리
             return 0;  // 기본값 또는 예외를 발생시키도록 변경할 수 있음
         }
+    }*/
+    // 비관적 락 최소화
+    @Transactional(readOnly = true)
+    public int getProductStock(Long productId) {
+        // 단순 조회에선 락 사용 없이 조회
+        return productRepository.findById(productId)
+                .map(Product::getStock)
+                .orElse(0);  // 상품이 없으면 0 반환
     }
 
    @Transactional
