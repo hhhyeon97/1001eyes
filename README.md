@@ -4,12 +4,12 @@
 <details>
 <summary>목차</summary>
 
-- [Overview](#-Overview)
-- [ERD](#-ERD)
-- [기술 스택](#-기술-스택)
-- [Main Feature](#-Main-Feature)
-- [성능 개선](#-성능-개선)
-- [Trouble shooting](#-Trouble-shooting)
+- [Overview](#Overview)
+- [ERD](#ERD)
+- [기술 스택](#기술-스택)
+- [Main Feature](#Main-Feature)
+- [성능 개선](#성능-개선)
+- [Trouble Shooting](#Trouble-Shooting)
 
 </details>
 
@@ -24,10 +24,10 @@
 
 ## 성능 개선
 
-## Trouble shooting
+## Trouble Shooting
 
 <div align="right">
 
-[목차로](#목차)
+[맨 위로](#1001eyes)
 
 </div>
