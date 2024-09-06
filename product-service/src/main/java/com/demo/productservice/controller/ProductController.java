@@ -47,6 +47,8 @@ public class ProductController {
         }
     }
 
+
+
     /**
      * order-service와 내부 소통하는 api
      * 실제 상품 db 재고 업데이트
@@ -74,7 +76,6 @@ public class ProductController {
         // 반환값 설정 (stock 수량)
         return ResponseEntity.ok(stock);
     }
-
 
     /** 240831
      * 주문에서 호출하는 재고 확인 및 차감 API

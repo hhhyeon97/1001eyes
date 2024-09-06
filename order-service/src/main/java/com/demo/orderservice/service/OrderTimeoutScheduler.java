@@ -87,8 +87,8 @@ public class OrderTimeoutScheduler {
             // 레디스에서 재고 복구
             redisTemplate.opsForValue().increment(stockKey, quantity);
             log.info("Stock for product {} has been restored by {}", productId, quantity);
-            // 4. Slack 알림 발송
-            slackNotifierService.sendNotification("재고 복구 -> 상품 id : " + productId + ", 복구 재고수 : " + quantity);
+//            // 4. Slack 알림 발송
+//            slackNotifierService.sendNotification("재고 복구 -> 상품 id : " + productId + ", 복구 재고수 : " + quantity);
         }
     }
 
