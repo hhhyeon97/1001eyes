@@ -131,6 +131,7 @@ public class ProductService {
             return 0;  // 기본값 또는 예외를 발생시키도록 변경할 수 있음
         }
     }*/
+
     // 비관적 락 최소화
     @Transactional(readOnly = true)
     public int getProductStock(Long productId) {
@@ -162,9 +163,6 @@ public class ProductService {
                     product.setStock(currentStock - quantityToOrder);
                     productRepository.save(product);
 
-//                    // Redis 캐시된 재고도 업데이트
-//                    redisTemplate.opsForValue().set("stock:" + productId, String.valueOf(currentStock - quantityToOrder));
-
                 } finally {
                     lock.unlock();  // 락 해제
                 }
@@ -180,6 +178,7 @@ public class ProductService {
             throw new RuntimeException("재고 차감 중 오류가 발생했습니다.", e);
         }
     }
+
 
    /* @Transactional
     public void checkAndDeductStock(Long productId, int quantityToOrder) {
