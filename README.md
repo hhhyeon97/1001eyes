@@ -18,14 +18,15 @@
 ## Overview
 
 1001eyes는 한정판 제품을 선착순 구매하는 상황을 기반으로 한 이커머스 서비스입니다. <br>
-MSA 구조를 적용하여 모듈 간 독립성을 강화했으며, 대용량 트래픽을 처리하기 위해 Redis 캐싱, 분산 락 등을 활용했습니다. <br>
+MSA 구조를 적용하여 모듈 간 독립성을 강화했으며, <br>
+대용량 트래픽을 처리하기 위해 Redis 캐싱, 분산 락 등을 활용했습니다. <br>
 주요 목표는 구매 프로세스를 설계하고, 안정적인 성능을 유지하면서 재고 관리를 하는 것입니다. <br>
 
 - 개발 기간: 2024/08/07 ~ 2024/09/04 (4주)
 - [API 명세서](https://documenter.getpostman.com/view/33051866/2sA3s7ho4p)
 
 ## ERD
-![img.png](etc/image/img.png)
+![img.png](etc/image/erd.png)
 
 ## Tech Stack
 
