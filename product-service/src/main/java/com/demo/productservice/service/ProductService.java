@@ -87,6 +87,7 @@ public class ProductService {
         }
         // Redis에 재고 정보가 없는 경우 DB에서 조회
         Product product = productRepository.findByIdWithLock(productId).orElse(null);
+//        Product product = productRepository.findById(productId).orElse(null); // test
         if (product != null) {
             // 데이터베이스에서 조회한 재고를 Redis에 캐싱
             redisTemplate.opsForValue().set("stock:" + productId, String.valueOf(product.getStock()));

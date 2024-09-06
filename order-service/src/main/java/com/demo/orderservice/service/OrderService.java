@@ -209,6 +209,46 @@ public class OrderService {
         }
     }
 
+    // 캐싱전후 테스트시 사용
+  /*  @Transactional
+    public Long prepareOrder(String userId, List<PrepareOrderRequestDto> prepareOrderRequestDtoList) {
+        // 1. 주문에 대한 고유한 키 생성
+        Long orderKey = System.currentTimeMillis(); // 간단한 방법으로 키 생성
+
+        // 2. 주문 객체 생성
+        Order order = new Order();
+        order.setUserId(userId);
+        order.setOrderDate(LocalDateTime.now());
+        order.setStatus(OrderStatus.PENDING);
+
+        // 3. 각 상품에 대해 재고 확인 및 차감
+        for (PrepareOrderRequestDto requestDto : prepareOrderRequestDtoList) {
+            Long productId = requestDto.getProductId();
+            Integer quantityToOrder = requestDto.getQuantity();
+
+            // DB에서 재고 조회 (캐싱 없이 직접 조회)
+            Integer currentStock = productServiceClient.getProductByInternalId(productId).getBody();
+
+            // 재고가 부족한 경우 예외 처리
+            if (currentStock < quantityToOrder) {
+                throw new IllegalArgumentException("상품 재고가 부족합니다: " + productId);
+            }
+
+            // DB에서 재고 차감
+            productServiceClient.checkAndDeductStock(productId, quantityToOrder);
+
+            // 주문 아이템 추가
+            OrderItem orderItem = new OrderItem();
+            orderItem.setProductId(productId);
+            orderItem.setQuantity(quantityToOrder);
+            order.getItems().add(orderItem);
+        }
+        // 4. DB에 주문 객체 저장
+        orderRepository.save(order);
+
+        return orderKey;
+    }*/
+
     // 결제 진입 ( 실제 db 반영 x -> 레디스에 저장 )
     @Transactional
     public Long preparePayment(String userId, List<PaymentRequestDto> paymentRequestDtoList) {
@@ -326,44 +366,7 @@ public class OrderService {
         }
     }
 
-  /*  @Transactional
-    public Long prepareOrder(String userId, List<PrepareOrderRequestDto> prepareOrderRequestDtoList) {
-        // 1. 주문에 대한 고유한 키 생성
-        Long orderKey = System.currentTimeMillis(); // 간단한 방법으로 키 생성
-
-        // 2. 주문 객체 생성
-        Order order = new Order();
-        order.setUserId(userId);
-        order.setOrderDate(LocalDateTime.now());
-        order.setStatus(OrderStatus.PENDING);
-
-        // 3. 각 상품에 대해 재고 확인 및 차감
-        for (PrepareOrderRequestDto requestDto : prepareOrderRequestDtoList) {
-            Long productId = requestDto.getProductId();
-            Integer quantityToOrder = requestDto.getQuantity();
-
-            // DB에서 재고 조회 (캐싱 없이 직접 조회)
-            Integer currentStock = productServiceClient.getProductByInternalId(productId).getBody();
-
-            // 재고가 부족한 경우 예외 처리
-            if (currentStock < quantityToOrder) {
-                throw new IllegalArgumentException("상품 재고가 부족합니다: " + productId);
-            }
-
-            // DB에서 재고 차감
-            productServiceClient.checkAndDeductStock(productId, quantityToOrder);
-
-            // 주문 아이템 추가
-            OrderItem orderItem = new OrderItem();
-            orderItem.setProductId(productId);
-            orderItem.setQuantity(quantityToOrder);
-            order.getItems().add(orderItem);
-        }
-        // 4. DB에 주문 객체 저장
-        orderRepository.save(order);
-
-        return orderKey;
-    }
+  /*
 
     @Transactional
     public Long preparePayment(String userId, List<PaymentRequestDto> paymentRequestDtoList) {
