@@ -70,22 +70,6 @@ public class OrderController {
         return orderService.completePayment(userId);
     }
 
-
-    // =================================================================================
-
-
-    /*// 주문 생성
-    @PostMapping
-    public ResponseEntity<String> createOrder(@RequestHeader("X-Auth-User-ID") String userId,
-                                              @RequestBody OrderDto orderDto) {
-        try {
-            Order order = orderService.createOrder(userId, orderDto.getItems());
-            return ResponseEntity.ok("주문 완료 -> 주문번호 : " + order.getId());
-        } catch (Exception e) {
-            return ResponseEntity.badRequest().body(e.getMessage());
-        }
-    }*/
-
     // 주문 취소
     @PostMapping("/cancel")
     public ResponseEntity<String> cancelOrder(@RequestParam Long orderId) {
