@@ -31,7 +31,7 @@ MSA 구조를 적용하여 모듈 간 독립성을 강화하고 대규모 트래
 
 ## Architecture
 
-![제목 없음-2024-09-05-2035](https://github.com/user-attachments/assets/b0c4bb8d-8916-4f58-841b-361cc5ab1356)
+![제목 없음-2024-09-05-2035](https://github.com/user-attachments/assets/6d992906-e249-4d97-b705-cc28994c8472)
 
 
 ## Tech Stack
