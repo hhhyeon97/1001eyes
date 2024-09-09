@@ -28,7 +28,9 @@ MSA 구조를 적용하여 모듈 간 독립성을 강화하고 대규모 트래
 ![img.png](etc/image/erd.png)
 
 ## Tech Stack
-
+<details>
+<summary>기술 스택</summary>
+  
 | **Tech**       | **Usage**                  |
 |----------------|----------------------------|
 | **Language**   | Java 21                    |
@@ -45,6 +47,9 @@ MSA 구조를 적용하여 모듈 간 독립성을 강화하고 대규모 트래
 | **Library**    | Spring Boot Mail (3.1.2)   |
 | **Load Testing** | JMeter                   |
 | **DevOps**     | Docker (25.0.3)            |
+
+</details>
+
 
 ## Main Feature
 
