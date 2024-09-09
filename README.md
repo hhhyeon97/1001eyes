@@ -5,6 +5,7 @@
 
 - [Overview](#Overview)
 - [ERD](#ERD)
+- [Architecture](#Architecture)
 - [Tech Stack](#Tech-Stack)
 - [Main Feature](#Main-Feature)
 - [성능 개선](#성능-개선)
@@ -26,6 +27,12 @@ MSA 구조를 적용하여 모듈 간 독립성을 강화하고 대규모 트래
 
 ## ERD
 ![img.png](etc/image/erd.png)
+
+
+## Architecture
+
+![제목 없음-2024-09-05-2035](https://github.com/user-attachments/assets/b0c4bb8d-8916-4f58-841b-361cc5ab1356)
+
 
 ## Tech Stack
 <details>
