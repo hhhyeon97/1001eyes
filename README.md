@@ -1,7 +1,6 @@
 # 📈 1001eyes
 
-<details>
-<summary>목차</summary>
+목차
 
 - [Overview](#Overview)
 - [ERD](#ERD)
@@ -11,8 +10,6 @@
 - [성능 개선](#성능-개선)
 
 [//]: # (- [Trouble Shooting]&#40;#Trouble-Shooting&#41;)
-
-</details>
 
 
 ## Overview
