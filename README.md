@@ -47,7 +47,7 @@ MSA 구조를 적용하여 모듈 간 독립성을 강화하고 대규모 트래
 | **ORM**        | Spring Data JPA            |
 | **Cache**      | Redis (Redisson 3.21.0)    |
 | **Cloud**      | Spring Cloud 2023.0.3      |
-| **Service Discovery** | Spring Eureka       |
+| **Service Discovery** | Spring Cloud Eureka       |
 | **API Gateway**| Spring Cloud Gateway 4.1.5 |
 | **Library**    | Feign Client               |
 | **Library**    | JJWT (0.11.5)              |
