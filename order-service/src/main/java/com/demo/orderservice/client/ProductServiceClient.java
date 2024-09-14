@@ -2,8 +2,11 @@ package com.demo.orderservice.client;
 
 import com.demo.orderservice.dto.ProductResponseDto;
 import org.springframework.cloud.openfeign.FeignClient;
+import org.springframework.http.HttpEntity;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+
+import java.time.LocalDateTime;
 
 @FeignClient(name = "product-service")
 public interface ProductServiceClient {
@@ -23,4 +26,9 @@ public interface ProductServiceClient {
     // 새로운 재고 확인 및 차감 API
     @PostMapping("/api/products/{id}/deduct")
     ResponseEntity<String> checkAndDeductStock(@PathVariable("id") Long id, @RequestParam("quantity") int quantity);
+
+    // 상품 오픈 시간 확인 API 추가
+    @GetMapping("/api/products/{id}/open-time")
+    ResponseEntity<LocalDateTime> getProductOpenTime(@PathVariable("id") Long id);
+
 }

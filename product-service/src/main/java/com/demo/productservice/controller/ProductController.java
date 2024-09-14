@@ -8,6 +8,7 @@ import com.demo.productservice.service.ProductService;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 
@@ -36,7 +37,7 @@ public class ProductController {
     }
 
 
-    // 상품 상세 조회 -> 수정한 사항 : 상세페이지에서 보여줄 재고는 레디스 캐싱한 데이터
+   /* // 상품 상세 조회 -> 수정한 사항 : 상세페이지에서 보여줄 재고는 레디스 캐싱한 데이터
     @GetMapping("/{id}")
     public ResponseEntity<ProductResponseDto> productDetail(@PathVariable("id") Long id) {
         Optional<ProductResponseDto> result = productService.findItemDetailById(id);
@@ -45,8 +46,29 @@ public class ProductController {
         } else {
             return ResponseEntity.status(404).body(null);
         }
+    }*/
+
+    // todo : 상품 오픈 시간 필터 거친 상세 조회
+    @GetMapping("/{id}")
+    public ResponseEntity<ProductResponseDto> productDetail(@PathVariable("id") Long id) {
+        Optional<ProductResponseDto> result = productService.findItemDetailById(id);
+        if (result.isPresent()) {
+            ProductResponseDto product = result.get();
+            if (product.getOpenTime().isAfter(LocalDateTime.now())) {
+                return ResponseEntity.ok(new ProductResponseDto("상품은 아직 오픈되지 않았습니다."));
+            }
+            return ResponseEntity.ok(product);
+        } else {
+            return ResponseEntity.status(404).body(null);
+        }
     }
 
+    // 오픈 시간 확인 API
+    @GetMapping("/{id}/open-time")
+    public ResponseEntity<LocalDateTime> getProductOpenTime(@PathVariable("id") Long id) {
+        LocalDateTime openTime = productService.getProductOpenTime(id);
+        return ResponseEntity.ok(openTime);
+    }
 
 
     /**

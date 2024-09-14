@@ -35,14 +35,18 @@ public class Product {
     @CreationTimestamp
     private LocalDateTime created_at;
 
+    // 오픈 시간을 저장하는 필드 추가
+    private LocalDateTime openTime;
 
-    public Product(String title, String description, String category, Integer price, Integer stock, String imageUrl) {
+    public Product(String title, String description, String category, Integer price,
+                   Integer stock, String imageUrl, LocalDateTime openTime) {
         this.title = title;
         this.description = description;
         this.category = category;
         this.price = price;
         this.stock = stock;
         this.imageUrl = imageUrl;
+        this.openTime = openTime;
     }
 
 }
