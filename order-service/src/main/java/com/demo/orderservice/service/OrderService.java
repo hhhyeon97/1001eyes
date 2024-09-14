@@ -130,7 +130,7 @@ public class OrderService {
         orderRepository.save(order);
     }
 
-    // 주문진입
+  /*  // 주문진입
     @Transactional(readOnly = false)
     public Long prepareOrder(String userId, List<PrepareOrderRequestDto> prepareOrderRequestDtoList) {
         // 1. 주문에 대한 고유한 키 생성 (Long)
@@ -203,7 +203,76 @@ public class OrderService {
             return orderKey; // Long 타입 주문 키 반환
         } catch (Exception e) {
             log.error("주문 준비 중 예외 발생", e);
+
             // 실패한 경우, 사용자와 매핑된 임시오더키 삭제
+            redisTemplate.delete(userOrderKey);
+            throw e;
+        }
+    }*/
+
+    @Transactional(readOnly = false)
+    public Long prepareOrder(String userId, List<PrepareOrderRequestDto> prepareOrderRequestDtoList) {
+        // 1. 주문에 대한 고유한 키 생성 (Long)
+        Long orderKey = redisTemplate.opsForValue().increment(ORDER_KEY_SEQUENCE);
+        if (orderKey == null) {
+            throw new IllegalStateException("주문 키 생성에 실패했습니다.");
+        }
+        String userOrderKey = "user_orders:" + userId;
+        redisTemplate.opsForValue().set(userOrderKey, orderKey.toString());
+
+        try {
+            for (PrepareOrderRequestDto requestDto : prepareOrderRequestDtoList) {
+                Long productId = requestDto.getProductId();
+                Integer quantityToOrder = requestDto.getQuantity();
+                String stockKey = "stock:" + productId;
+
+                // ** 오픈 시간 확인 **
+                LocalDateTime openTime = productServiceClient.getProductOpenTime(productId).getBody();
+
+                if (openTime != null && openTime.isAfter(LocalDateTime.now())) {
+                    throw new IllegalArgumentException("상품이 아직 오픈되지 않았습니다: " + productId);
+                }
+
+                // ** 기존 재고 차감 로직 **
+                RLock productLock = redissonClient.getLock("stock_lock:" + productId);
+                try {
+                    if (productLock.tryLock(3, 6, TimeUnit.SECONDS)) {
+                        Integer currentStock = (Integer) redisTemplate.opsForValue().get(stockKey);
+
+                        if (currentStock == null) {
+                            Integer dbStock = productServiceClient.getProductByInternalId(productId).getBody();
+                            currentStock = dbStock;
+                            redisTemplate.opsForValue().set(stockKey, currentStock);
+                        }
+
+                        if (currentStock < quantityToOrder) {
+                            throw new IllegalArgumentException("상품 재고가 부족합니다: " + productId);
+                        }
+
+                        redisTemplate.opsForValue().decrement(stockKey, quantityToOrder);
+                    } else {
+                        throw new RuntimeException("재고 차감을 위한 락을 획득하지 못했습니다.");
+                    }
+                } catch (InterruptedException e) {
+                    Thread.currentThread().interrupt();
+                    throw new RuntimeException("재고 차감 중 인터럽트 발생", e);
+                } finally {
+                    productLock.unlock();
+                }
+            }
+
+            PrepareOrderDto prepareOrderDto = new PrepareOrderDto();
+            prepareOrderDto.setUserId(userId);
+            prepareOrderDto.setOrderItems(prepareOrderRequestDtoList);
+            prepareOrderDto.setCreatedAt(LocalDateTime.now());
+            prepareOrderDto.setStatus(OrderStatus.PENDING);
+
+            redisTemplate.opsForHash().put("orders", orderKey.toString(), prepareOrderDto);
+            redisTemplate.expire("orders:" + orderKey, 3, TimeUnit.MINUTES);
+
+            return orderKey;
+        } catch (Exception e) {
+            log.error("주문 준비 중 예외 발생", e);
             redisTemplate.delete(userOrderKey);
             throw e;
         }

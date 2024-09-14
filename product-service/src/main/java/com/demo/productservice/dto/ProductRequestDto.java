@@ -4,6 +4,8 @@ import com.demo.productservice.model.Product;
 import lombok.Getter;
 import lombok.Setter;
 
+import java.time.LocalDateTime;
+
 @Getter
 @Setter
 public class ProductRequestDto {
@@ -14,8 +16,9 @@ public class ProductRequestDto {
     private Integer price;
     private Integer stock;
     private String imageUrl;
+    private LocalDateTime openTime;
 
     public Product toProduct() {
-        return new Product(title, description, category, price, stock, imageUrl);
+        return new Product(title, description, category, price, stock, imageUrl, openTime);
     }
 }

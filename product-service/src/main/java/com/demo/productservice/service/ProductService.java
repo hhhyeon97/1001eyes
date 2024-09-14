@@ -12,6 +12,7 @@ import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.TimeUnit;
@@ -119,20 +120,6 @@ public class ProductService {
         * */
     }
 
-
- /*   // 상품의 stock 수량을 조회하는 메서드
-    @Transactional
-    public int getProductStock(Long productId) {
-        // DB에서 Product 엔티티를 찾고 stock 수량 반환
-        Optional<Product> product = productRepository.findByIdWithLock(productId);
-        if (product.isPresent()) {
-            return product.get().getStock();  // Product 엔티티의 getStock() 메서드 호출
-        } else {
-            // 상품이 없을 경우 예외 처리
-            return 0;  // 기본값 또는 예외를 발생시키도록 변경할 수 있음
-        }
-    }*/
-
     // 비관적 락 최소화
     @Transactional(readOnly = true)
     public int getProductStock(Long productId) {
@@ -180,22 +167,11 @@ public class ProductService {
         }
     }
 
-
-   /* @Transactional
-    public void checkAndDeductStock(Long productId, int quantityToOrder) {
-                    Product product = productRepository.findById(productId)
-                            .orElseThrow(() -> new IllegalArgumentException("상품을 찾을 수 없습니다: " + productId));
-
-                    int currentStock = product.getStock();
-
-                    if (currentStock < quantityToOrder) {
-                        throw new RuntimeException("상품 재고가 부족합니다: " + productId);
-                    }
-                    // 재고 차감
-                    product.setStock(currentStock - quantityToOrder);
-                    productRepository.save(product);
-
-    }*/
-
-
+    // 상품의 오픈 시간을 반환하는 메서드
+    public LocalDateTime getProductOpenTime(Long id) {
+        Product product = productRepository.findById(id)
+                .orElseThrow(() -> new IllegalArgumentException("상품을 찾을 수 없습니다."));
+        System.out.println("오픈 시간 : " + product.getOpenTime());
+        return product.getOpenTime();  // 상품의 오픈 시간 반환
+    }
 }
