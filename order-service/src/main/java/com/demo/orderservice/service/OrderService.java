@@ -7,28 +7,18 @@ import com.demo.orderservice.model.OrderItem;
 import com.demo.orderservice.model.OrderStatus;
 import com.demo.orderservice.repository.OrderRepository;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import feign.FeignException;
-import jakarta.persistence.OptimisticLockException;
 import lombok.extern.slf4j.Slf4j;
 import org.redisson.api.RLock;
 import org.redisson.api.RedissonClient;
 import org.springframework.dao.DataAccessException;
-import org.springframework.data.redis.core.RedisOperations;
 import org.springframework.data.redis.core.RedisTemplate;
-import org.springframework.data.redis.core.SessionCallback;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
-import java.time.format.DateTimeFormatter;
-import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
-import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
@@ -278,46 +268,6 @@ public class OrderService {
         }
     }
 
-    // 캐싱전후 테스트시 사용
-  /*  @Transactional
-    public Long prepareOrder(String userId, List<PrepareOrderRequestDto> prepareOrderRequestDtoList) {
-        // 1. 주문에 대한 고유한 키 생성
-        Long orderKey = System.currentTimeMillis(); // 간단한 방법으로 키 생성
-
-        // 2. 주문 객체 생성
-        Order order = new Order();
-        order.setUserId(userId);
-        order.setOrderDate(LocalDateTime.now());
-        order.setStatus(OrderStatus.PENDING);
-
-        // 3. 각 상품에 대해 재고 확인 및 차감
-        for (PrepareOrderRequestDto requestDto : prepareOrderRequestDtoList) {
-            Long productId = requestDto.getProductId();
-            Integer quantityToOrder = requestDto.getQuantity();
-
-            // DB에서 재고 조회 (캐싱 없이 직접 조회)
-            Integer currentStock = productServiceClient.getProductByInternalId(productId).getBody();
-
-            // 재고가 부족한 경우 예외 처리
-            if (currentStock < quantityToOrder) {
-                throw new IllegalArgumentException("상품 재고가 부족합니다: " + productId);
-            }
-
-            // DB에서 재고 차감
-            productServiceClient.checkAndDeductStock(productId, quantityToOrder);
-
-            // 주문 아이템 추가
-            OrderItem orderItem = new OrderItem();
-            orderItem.setProductId(productId);
-            orderItem.setQuantity(quantityToOrder);
-            order.getItems().add(orderItem);
-        }
-        // 4. DB에 주문 객체 저장
-        orderRepository.save(order);
-
-        return orderKey;
-    }*/
-
     // 결제 진입 ( 실제 db 반영 x -> 레디스에 저장 )
     @Transactional
     public Long preparePayment(String userId, List<PaymentRequestDto> paymentRequestDtoList) {
@@ -434,68 +384,5 @@ public class OrderService {
             // Redis 정리 실패는 크리티컬한 오류가 아니므로 예외를 던지지 않고 로그만 남깁니다.
         }
     }
-
-  /*
-
-    @Transactional
-    public Long preparePayment(String userId, List<PaymentRequestDto> paymentRequestDtoList) {
-        // 1. DB에서 orderKey 찾기
-        Order order = orderRepository.findByUserIdAndStatus(userId, OrderStatus.PENDING)
-                .orElseThrow(() -> new IllegalArgumentException("해당 사용자의 주문이 없습니다."));
-
-        Long orderKey = order.getId();
-
-        // 2. 주문 객체 업데이트
-//        order.setItems(paymentRequestDtoList);
-        order.setStatus(OrderStatus.PAYING);
-
-        // 3. DB에 업데이트된 주문 객체 저장
-        orderRepository.save(order);
-
-        return orderKey;  // Long 타입 결제 키 반환
-    }
-
-    @Transactional
-    public ResponseEntity<?> completePayment(String userId) {
-        try {
-            log.debug("시작: completePayment for user {}", userId);
-
-            // 1. DB에서 주문 조회
-            Order order = orderRepository.findByUserIdAndStatus(userId, OrderStatus.PAYING)
-                    .orElseThrow(() -> new IllegalArgumentException("해당 사용자의 주문이 없습니다."));
-
-            // 2. 주문 상태를 완료로 변경
-            order.setStatus(OrderStatus.COMPLETED);
-            orderRepository.save(order);
-
-            // 3. 재고 차감
-            deductStock(order);
-            log.debug("재고 차감 완료");
-
-            return ResponseEntity.ok("결제가 완료되었습니다.");
-        } catch (IllegalArgumentException e) {
-            return ResponseEntity.badRequest().body(e.getMessage());
-        } catch (Exception e) {
-            log.error("결제 처리 중 오류 발생", e);
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("결제 처리 중 오류가 발생했습니다.");
-        } finally {
-            log.debug("종료: completePayment for user {}", userId);
-        }
-    }
-
-
-    @Transactional
-    public void deductStock(Order order) {
-        for (OrderItem item : order.getItems()) {
-            Long productId = item.getProductId();
-            int quantityOrdered = item.getQuantity();
-            try {
-                productServiceClient.checkAndDeductStock(productId, quantityOrdered);
-            } catch (Exception e) {
-                log.error("재고 차감 중 오류 발생. 상품 ID: {}", productId, e);
-                throw new RuntimeException("재고 차감 중 오류가 발생했습니다. 상품 ID: " + productId, e);
-            }
-        }
-    }*/
 
 }
